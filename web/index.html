@@ -134,7 +134,15 @@
         <div class="panel-separator"></div>
         <div class="deck-status-row"><span>PLAYER STATUS</span><span id="playerStatus">연결 대기 중</span></div>
         <div class="deck-status-row"><span>OUTPUT</span><span id="outputStatus">이 브라우저</span></div>
-        <div class="deck-visual" aria-hidden="true"><div class="deck-visual-top"><span>ALBUM DECK</span><span>STEREO</span></div><div class="deck-slot"><div class="deck-light"></div><div class="deck-slot-line"></div></div><div class="deck-visual-bottom"><span>WEB PLAYBACK</span><span>01</span></div></div>
+        <section class="context-queue" aria-labelledby="contextQueueTitle">
+          <div class="context-queue-heading">
+            <div><span>SELECTED TRACKS</span><strong id="contextQueueTitle">선택한 음악</strong></div>
+            <span id="contextQueueCount">0곡</span>
+          </div>
+          <div class="context-track-list" id="contextTrackList">
+            <div class="context-queue-empty">앨범이나 플레이리스트를 선택하면<br />곡 목록이 표시됩니다.</div>
+          </div>
+        </section>
       </aside>
     </div>
 

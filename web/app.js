@@ -36,6 +36,7 @@ const dom = {
   gapValue: $("#gapValue"), gapBadge: $("#gapBadge"),
   deviceSelect: $("#deviceSelect"), refreshDevices: $("#refreshDevices"),
   localOutput: $("#localOutputSetting"), openSoundSettings: $("#openSoundSettings"),
+  queueTitle: $("#contextQueueTitle"), queueCount: $("#contextQueueCount"), queueList: $("#contextTrackList"),
 };
 
 let token = readSession();
@@ -49,6 +50,7 @@ let playlistCache = [];
 let sdkPromise = null;
 let currentArtwork = "";
 let playbackQueue = [];
+let queueTracks = [];
 let queueIndex = -1;
 let queueTrackStarted = false;
 let queueMaxPosition = 0;
@@ -183,6 +185,7 @@ function clearSession() {
   deviceId = null;
   currentState = null;
   playbackQueue = [];
+  queueTracks = [];
   queueIndex = -1;
   if (queueAdvanceTimer) window.clearTimeout(queueAdvanceTimer);
   if (queueEndTimer) window.clearTimeout(queueEndTimer);
@@ -204,6 +207,7 @@ function clearSession() {
   dom.albumGrid.replaceChildren(makeWelcome());
   dom.playlistCount.textContent = "";
   dom.resultCount.textContent = "";
+  renderContextQueue();
 }
 
 function make(tag, className, text) {
@@ -610,11 +614,13 @@ async function playContext(uri, label = "재생") {
   if (!token) { openAccountDialog(); return; }
   if (usesBrowserPlayer() && (!deviceId || !player)) { showToast("내장 플레이어가 아직 준비되지 않았습니다.", "warning"); return; }
   try {
-    const uris = await playableUris(uri);
-    if (!uris.length) throw new Error("재생 가능한 곡을 찾지 못했습니다.");
+    const tracks = await playableTracks(uri);
+    if (!tracks.length) throw new Error("재생 가능한 곡을 찾지 못했습니다.");
     if (usesBrowserPlayer()) await player.activateElement();
-    playbackQueue = uris;
+    queueTracks = tracks;
+    playbackQueue = tracks.map((track) => track.uri);
     queueIndex = 0;
+    renderContextQueue(label);
     await playQueuedTrack();
     dom.status.textContent = "재생 요청 전송";
     showToast(`${label}을(를) ${usesBrowserPlayer() ? "Album Deck" : targetDevice.name}에서 재생합니다.`);
@@ -627,6 +633,7 @@ async function playQueuedTrack(index = queueIndex) {
   if (!playbackQueue[index]) return;
   queueGeneration += 1;
   queueIndex = index;
+  updateQueueHighlight();
   queueInGap = false;
   queueTrackStarted = false;
   queueMaxPosition = 0;
@@ -774,7 +781,41 @@ async function playPrevious() {
   return spotifyApi(`/me/player/previous?device_id=${encodeURIComponent(targetDeviceId())}`, { method: "POST" });
 }
 
-async function playableUris(contextUri) {
+function renderContextQueue(label = "선택한 음악") {
+  dom.queueTitle.textContent = label;
+  dom.queueCount.textContent = `${queueTracks.length}곡`;
+  dom.queueList.replaceChildren();
+  if (!queueTracks.length) {
+    dom.queueList.append(make("div", "context-queue-empty", "앨범이나 플레이리스트를 선택하면\n곡 목록이 표시됩니다."));
+    return;
+  }
+  queueTracks.forEach((track, index) => {
+    const row = make("button", "context-track");
+    row.type = "button";
+    row.dataset.queueIndex = String(index);
+    row.setAttribute("aria-label", `${index + 1}. ${track.name} 재생`);
+    row.append(make("span", "context-track-number", String(index + 1).padStart(2, "0")));
+    const copy = make("span", "context-track-copy");
+    copy.append(make("strong", "", track.name), make("span", "", track.artist || "아티스트 정보 없음"));
+    row.append(copy, make("span", "context-track-duration", timeLabel(track.duration_ms)));
+    row.addEventListener("click", () => playQueuedTrack(index).catch((error) => showToast(error.message, "error", 7000)));
+    dom.queueList.append(row);
+  });
+  updateQueueHighlight(false);
+}
+
+function updateQueueHighlight(scroll = true) {
+  let active = null;
+  dom.queueList.querySelectorAll(".context-track").forEach((row) => {
+    const selected = Number(row.dataset.queueIndex) === queueIndex;
+    row.classList.toggle("active", selected);
+    row.setAttribute("aria-current", selected ? "true" : "false");
+    if (selected) active = row;
+  });
+  if (scroll) active?.scrollIntoView({ block: "nearest" });
+}
+
+async function playableTracks(contextUri) {
   const match = /^spotify:(album|playlist):([A-Za-z0-9]+)$/.exec(contextUri || "");
   if (!match) throw new Error("지원하지 않는 Spotify 재생 주소입니다.");
   const [, type, id] = match;
@@ -784,7 +825,12 @@ async function playableUris(contextUri) {
   return rows
     .map((row) => row?.item || row?.track || row)
     .filter((track) => track?.type === "track" && !track.is_local && track.is_playable !== false && track.uri)
-    .map((track) => track.uri);
+    .map((track) => ({
+      uri: track.uri,
+      name: track.name || "제목 없음",
+      artist: (track.artists || []).map((artist) => artist.name).filter(Boolean).join(", "),
+      duration_ms: track.duration_ms || 0,
+    }));
 }
 
 async function searchAlbums(query) {
