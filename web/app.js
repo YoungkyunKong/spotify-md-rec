@@ -30,7 +30,7 @@ const dom = {
   nowArt: $("#nowArt"), artLink: $("#artLink"), nowTitle: $("#nowTitle"), nowArtist: $("#nowArtist"),
   trackKind: $("#trackKind"), miniArt: $("#miniArt"), miniTitle: $("#miniTitle"),
   miniArtist: $("#miniArtist"), miniSpotify: $("#miniSpotifyLink"), status: $("#playerStatus"),
-  output: $("#outputStatus"), equalizer: $("#equalizer"), attribution: $("#spotifyAttribution"),
+  output: $("#outputStatus"), equalizer: $("#equalizer"), heroDisc: $(".hero-disc"), attribution: $("#spotifyAttribution"),
   toast: $("#toastRegion"), settings: $("#settingsDialog"), settingsButton: $("#settingsButton"),
   settingsCancel: $("#settingsCancel"), settingsSave: $("#settingsSave"), gapInput: $("#gapInput"),
   gapValue: $("#gapValue"), gapBadge: $("#gapBadge"),
@@ -443,19 +443,20 @@ async function connectPlayer() {
   if (player) return;
   player = new window.Spotify.Player({
     name: "Album Deck",
-    volume: 0.7,
+    volume: 1,
     getOAuthToken: (callback) => accessToken().then(callback).catch((error) => showToast(error.message, "error")),
   });
   player.addListener("ready", ({ device_id }) => {
     deviceId = device_id;
     updateOutputLabel();
     dom.status.textContent = "준비 완료";
-    dom.equalizer.classList.add("active");
+    setPlaybackActivity(false);
     setTransportEnabled(true);
     showToast("내장 플레이어가 준비됐습니다.");
   });
   player.addListener("not_ready", () => {
     deviceId = null;
+    setPlaybackActivity(false);
     if (usesBrowserPlayer()) {
       dom.status.textContent = "연결 끊김";
       setTransportEnabled(false);
@@ -529,7 +530,8 @@ async function togglePlayback() {
   const state = await playbackState();
   if (!state) throw new Error("선택한 장치에서 재생 중인 곡이 없습니다.");
   const action = state.paused ? "play" : "pause";
-  return spotifyApi(`/me/player/${action}?device_id=${encodeURIComponent(targetDeviceId())}`, { method: "PUT" });
+  await spotifyApi(`/me/player/${action}?device_id=${encodeURIComponent(targetDeviceId())}`, { method: "PUT" });
+  renderState({ ...state, paused: !state.paused });
 }
 
 async function seekPlayback(position) {
@@ -554,12 +556,18 @@ function currentTrack(state) {
   return state?.track_window?.current_track || null;
 }
 
+function setPlaybackActivity(playing) {
+  const active = Boolean(playing) && !queueInGap;
+  dom.equalizer.classList.toggle("active", active);
+  dom.heroDisc.classList.toggle("active", active);
+}
+
 function renderState(state) {
   currentState = state;
   if (!usesBrowserPlayer() && state) remoteStateObservedAt = Date.now();
   const track = currentTrack(state);
   if (!track) {
-    dom.equalizer.classList.remove("active");
+    setPlaybackActivity(false);
     dom.playerBar.classList.remove("playing");
     setTransportEnabled(Boolean(usesBrowserPlayer() ? deviceId : targetDevice.id));
     return;
@@ -576,7 +584,7 @@ function renderState(state) {
   dom.duration.textContent = timeLabel(state.duration || 0);
   dom.seek.max = String(Math.max(1, state.duration || 1));
   if (!seeking) dom.seek.value = String(state.position || 0);
-  dom.equalizer.classList.toggle("active", playing);
+  setPlaybackActivity(playing);
   dom.play.classList.toggle("paused", playing);
   dom.play.setAttribute("aria-label", playing ? "일시정지" : "재생");
   dom.play.title = playing ? "일시정지" : "재생";
@@ -743,7 +751,12 @@ async function verifyQueueEnd(generation, expectedUri) {
 }
 
 function beginQueueAdvance(state) {
-  if (queueAdvanceTimer || queueIndex >= playbackQueue.length - 1) return;
+  if (queueAdvanceTimer) return;
+  if (queueIndex >= playbackQueue.length - 1) {
+    setPlaybackActivity(false);
+    dom.playerBar.classList.remove("playing");
+    return;
+  }
   const generation = queueGeneration;
   const nextIndex = queueIndex + 1;
   queueTrackStarted = false;
@@ -753,7 +766,7 @@ function beginQueueAdvance(state) {
   queueEndDeadline = 0;
   if (state && !state.paused) pausePlayback().catch(() => {});
   dom.status.textContent = gapSeconds > 0 ? `곡간 무음 · ${gapLabel(gapSeconds)}` : "다음 곡 준비 중";
-  dom.equalizer.classList.remove("active");
+  setPlaybackActivity(false);
   dom.playerBar.classList.remove("playing");
   queueAdvanceTimer = window.setTimeout(() => {
     queueAdvanceTimer = null;
