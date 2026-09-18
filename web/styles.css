@@ -55,14 +55,7 @@ a { color: inherit; }
 .shortcut-art { width: 34px; height: 34px; border-radius: 4px; object-fit: cover; background: #292e2b; flex: none; }
 .shortcut-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
 .sidebar-bottom { margin-top: auto; padding-top: 14px; }
-.connection-card { display: flex; align-items: center; gap: 9px; padding: 11px 9px; border-radius: 7px; background: #1b1f1e; }
-.connection-dot { width: 7px; height: 7px; background: #78817a; border-radius: 50%; box-shadow: 0 0 0 3px rgba(120,129,122,.1); flex: none; }
-.connection-dot.online { background: var(--mint); box-shadow: 0 0 0 3px rgba(184,243,106,.12), 0 0 12px rgba(184,243,106,.35); }
-.connection-copy { display: grid; flex: 1; min-width: 0; }
-.connection-copy strong { font-size: 13px; font-weight: 600; }
-.connection-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: #818a83; }
-.account-menu { font-size: 18px; letter-spacing: 2px; }
-.spotify-attribution { width: 100%; margin-top: 9px; padding: 8px; text-align: center; color: #9ca69d; background: transparent; border: 1px solid var(--line); border-radius: 6px; font-size: 10px; cursor: pointer; }
+.spotify-attribution { width: 100%; padding: 8px; text-align: center; color: #9ca69d; background: transparent; border: 1px solid var(--line); border-radius: 6px; font-size: 10px; cursor: pointer; }
 
 .main-content { min-width: 0; padding: 0 48px 25px; display: flex; flex-direction: column; }
 .topbar { height: 79px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); flex: none; }

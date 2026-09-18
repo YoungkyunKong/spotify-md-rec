@@ -19,8 +19,7 @@ const dom = {
   connect: $("#connectButton"), dialog: $("#accountDialog"), dialogAction: $("#dialogAction"),
   dialogDisconnect: $("#dialogDisconnect"),
   dialogCancel: $("#dialogCancel"), dialogTitle: $("#dialogTitle"), dialogCopy: $("#dialogCopy"),
-  accountMenu: $("#accountMenu"), accountLabel: $("#accountLabel"), connectionLabel: $("#connectionLabel"),
-  connectionDot: $("#connectionDot"), searchForm: $("#searchForm"), searchInput: $("#searchInput"),
+  searchForm: $("#searchForm"), searchInput: $("#searchInput"),
   albumGrid: $("#albumGrid"), resultCount: $("#resultCount"), resultsTitle: $("#resultsTitle"),
   playlistGrid: $("#playlistGrid"), playlistCount: $("#playlistCount"), shortcuts: $("#playlistShortcuts"),
   refreshPlaylists: $("#refreshPlaylists"), crumb: $("#crumbCurrent"), searchView: $("#searchView"),
@@ -231,9 +230,6 @@ function setBusy(value) {
 }
 
 function updateConnection(connected) {
-  dom.connectionDot.classList.toggle("online", connected);
-  dom.connectionLabel.textContent = connected ? "Spotify 연결됨" : "연결 안 됨";
-  dom.accountLabel.textContent = connected ? (token?.profile?.display_name || token?.profile?.email || "내 계정") : "Spotify 계정";
   dom.connect.textContent = connected ? "Spotify 연결됨" : "Spotify 연결";
   dom.connect.classList.toggle("connected", connected);
   if (connected) dom.status.textContent = deviceId ? "준비 완료" : "플레이어 연결 중";
@@ -1012,7 +1008,6 @@ dom.searchForm.addEventListener("submit", (event) => {
   searchAlbums(dom.searchInput.value);
 });
 dom.connect.addEventListener("click", () => token ? openAccountDialog() : startAuthorization().catch((error) => showToast(error.message, "error")));
-dom.accountMenu.addEventListener("click", openAccountDialog);
 dom.settingsButton.addEventListener("click", async () => {
   updateGapUi();
   dom.settings.showModal();
