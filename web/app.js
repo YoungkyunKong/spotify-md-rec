@@ -62,6 +62,9 @@ let gapSeconds = readGapSeconds();
 let targetDevice = readTargetDevice();
 let availableDevices = [];
 let volumeTimer = null;
+let spotifyBackoffUntil = 0;
+let spotifyBackoffReason = "rate";
+let lastRemotePollAt = 0;
 
 function readGapSeconds() {
   try {
@@ -350,6 +353,11 @@ async function accessToken() {
 }
 
 async function spotifyApi(path, options = {}) {
+  const backoffSeconds = Math.ceil((spotifyBackoffUntil - Date.now()) / 1000);
+  if (backoffSeconds > 0) {
+    const prefix = spotifyBackoffReason === "quota" ? "Spotify 개발 모드 할당량에 도달했습니다." : "Spotify 요청 한도에 도달했습니다.";
+    throw new Error(`${prefix} ${backoffSeconds}초 후 다시 시도해 주세요.`);
+  }
   const bearer = await accessToken();
   const url = path.startsWith("https://")
     ? new URL(path)
@@ -384,7 +392,16 @@ async function spotifyApi(path, options = {}) {
 function spotifyError(response, data) {
   const detail = data?.error?.message || data?.error_description || `HTTP ${response.status}`;
   if (response.status === 403) return new Error(`Spotify 재생 권한을 확인해 주세요. ${detail}`);
-  if (response.status === 429) return new Error(`Spotify 요청 한도에 도달했습니다. 잠시 후 다시 시도해 주세요. ${detail}`);
+  if (response.status === 429) {
+    const quotaExceeded = data?.error?.reason === "QUOTA_EXCEEDED";
+    const headerSeconds = Number(response.headers.get("Retry-After"));
+    const waitSeconds = Number.isFinite(headerSeconds) && headerSeconds > 0 ? headerSeconds : (quotaExceeded ? 300 : 30);
+    spotifyBackoffUntil = Math.max(spotifyBackoffUntil, Date.now() + waitSeconds * 1000);
+    spotifyBackoffReason = quotaExceeded ? "quota" : "rate";
+    return new Error(quotaExceeded
+      ? `Spotify 개발 모드 할당량에 도달했습니다. ${waitSeconds}초 후 다시 시도해 주세요. (${detail})`
+      : `Spotify 요청 한도에 도달했습니다. ${waitSeconds}초 후 다시 시도해 주세요. (${detail})`);
+  }
   return new Error(`Spotify API 오류 (${response.status}): ${detail}`);
 }
 
@@ -452,6 +469,11 @@ async function connectPlayer() {
 
 async function pollPlayer() {
   if (!player) return;
+  if (!usesBrowserPlayer()) {
+    const now = Date.now();
+    if (now - lastRemotePollAt < 10_000 || now < spotifyBackoffUntil) return;
+    lastRemotePollAt = now;
+  }
   try {
     const state = await playbackState();
     if (state) {
@@ -614,7 +636,7 @@ async function waitForQueuedTrack(expectedUri, timeout = 4000) {
   while (Date.now() < deadline) {
     const state = await playbackState();
     if (currentTrack(state)?.uri === expectedUri) return state;
-    await new Promise((resolve) => window.setTimeout(resolve, usesBrowserPlayer() ? 100 : 400));
+    await new Promise((resolve) => window.setTimeout(resolve, usesBrowserPlayer() ? 100 : 1000));
   }
   return null;
 }
