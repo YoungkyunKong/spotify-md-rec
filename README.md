@@ -22,7 +22,7 @@ npm start
 
 브라우저에서 [http://127.0.0.1:8888](http://127.0.0.1:8888)을 엽니다. Spotify 연결을 누르면 PKCE 로그인 후 앱으로 돌아옵니다. 로그인 화면은 매번 승인 대화상자를 표시하므로 현재 계정이 다르면 Spotify 화면의 **Not you?** 링크로 다른 계정을 선택할 수 있습니다. 연결된 뒤에는 우측 상단 **Spotify 연결됨**에서 **다른 계정으로 연결** 또는 **연결 해제**를 선택합니다. `Ctrl+C`로 정적 파일 서버를 종료합니다.
 
-Windows에 사용자 앱으로 설치하려면 `install-windows.ps1`을 실행합니다. `%LOCALAPPDATA%\Programs\AlbumDeck`에 복사되고 바탕 화면과 시작 메뉴에 **Album Deck** 바로가기가 생성됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
+Windows에 사용자 앱으로 설치하려면 `install-windows.ps1`을 실행합니다. `%LOCALAPPDATA%\Programs\AlbumDeck`에 복사되고 바탕 화면과 시작 메뉴에 **Album Deck** 바로가기가 생성됩니다. 바로가기는 Chrome의 독립 앱 창으로 열리며, Chrome이 없으면 Edge를 사용합니다. 주소창이나 브라우저 탭은 표시되지 않고 기존 브라우저 프로필의 로그인 정보와 설정은 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
 
 ## Node.js 앱 배포
 
@@ -53,7 +53,7 @@ https://실제-배포-도메인/callback
 
 공개 배포 주소에는 HTTPS가 필요합니다. Spotify의 Redirect URI는 대소문자, 포트, 경로와 끝 슬래시까지 등록값과 정확히 일치해야 합니다. 로컬 개발용 `http://127.0.0.1:8888/callback`은 함께 남겨둘 수 있습니다.
 
-첫 로그인은 `streaming`, `user-read-private`, `user-read-email`, `user-read-playback-state`, `user-modify-playback-state`, `playlist-read-private`, `playlist-read-collaborative` 권한을 요청합니다. 기존 CLI 토큰은 이 브라우저 앱에 쓰이지 않으며, 브라우저 세션별로 인증이 필요합니다. access/refresh token은 브라우저 `sessionStorage`에만 저장되고 탭 세션이 끝나면 지워집니다.
+첫 로그인은 `streaming`, `user-read-private`, `user-read-email`, `user-read-playback-state`, `user-modify-playback-state`, `playlist-read-private`, `playlist-read-collaborative` 권한을 요청합니다. 기존 CLI 토큰은 이 브라우저 앱에 쓰이지 않습니다. access/refresh token은 이 PC의 브라우저 로컬 저장소에 보관되어 앱을 다시 실행해도 로그인이 유지되며, **연결 해제** 또는 **다른 계정으로 연결**을 선택하면 지워집니다.
 
 ## 사용
 

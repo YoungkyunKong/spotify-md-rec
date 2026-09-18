@@ -53,6 +53,9 @@ let queueIndex = -1;
 let queueTrackStarted = false;
 let queueMaxPosition = 0;
 let queueAdvanceTimer = null;
+let queueEndTimer = null;
+let queueEndDeadline = 0;
+let queueGeneration = 0;
 let playbackErrorTimer = null;
 let queueInGap = false;
 let gapSeconds = readGapSeconds();
@@ -152,17 +155,25 @@ function selectedDeviceFromSettings() {
 }
 
 function readSession() {
-  try { return JSON.parse(sessionStorage.getItem(TOKEN_KEY) || "null"); }
+  try {
+    const saved = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    if (!saved) return null;
+    localStorage.setItem(TOKEN_KEY, saved);
+    sessionStorage.removeItem(TOKEN_KEY);
+    return JSON.parse(saved);
+  }
   catch { return null; }
 }
 
 function saveSession(value) {
   token = value;
-  sessionStorage.setItem(TOKEN_KEY, JSON.stringify(value));
+  localStorage.setItem(TOKEN_KEY, JSON.stringify(value));
+  sessionStorage.removeItem(TOKEN_KEY);
   updateConnection(true);
 }
 
 function clearSession() {
+  localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
   token = null;
   deviceId = null;
@@ -170,7 +181,11 @@ function clearSession() {
   playbackQueue = [];
   queueIndex = -1;
   if (queueAdvanceTimer) window.clearTimeout(queueAdvanceTimer);
+  if (queueEndTimer) window.clearTimeout(queueEndTimer);
   queueAdvanceTimer = null;
+  queueEndTimer = null;
+  queueEndDeadline = 0;
+  queueGeneration += 1;
   queueInGap = false;
   targetDevice = { mode: "browser", name: "이 브라우저" };
   availableDevices = [];
@@ -376,7 +391,8 @@ function spotifyError(response, data) {
 async function loadProfile() {
   const profile = await spotifyApi("/me");
   token.profile = { display_name: profile.display_name, email: profile.email, id: profile.id };
-  sessionStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+  localStorage.setItem(TOKEN_KEY, JSON.stringify(token));
+  sessionStorage.removeItem(TOKEN_KEY);
   updateConnection(true);
 }
 
@@ -435,12 +451,14 @@ async function connectPlayer() {
 }
 
 async function pollPlayer() {
-  if (!player || document.hidden) return;
+  if (!player) return;
   try {
     const state = await playbackState();
     if (state) {
-      renderState(state);
+      if (!document.hidden) renderState(state);
       observeQueueState(state);
+    } else if (queueTrackStarted) {
+      observeQueueState(null);
     }
   } catch { /* Keep the last known state during a transient device/API failure. */ }
 }
@@ -566,12 +584,16 @@ async function playContext(uri, label = "재생") {
 
 async function playQueuedTrack(index = queueIndex) {
   if (!playbackQueue[index]) return;
+  queueGeneration += 1;
   queueIndex = index;
   queueInGap = false;
   queueTrackStarted = false;
   queueMaxPosition = 0;
   if (queueAdvanceTimer) window.clearTimeout(queueAdvanceTimer);
+  if (queueEndTimer) window.clearTimeout(queueEndTimer);
   queueAdvanceTimer = null;
+  queueEndTimer = null;
+  queueEndDeadline = 0;
   const selectedId = targetDeviceId();
   await spotifyApi(`/me/player/play?device_id=${encodeURIComponent(selectedId)}`, {
     method: "PUT", body: JSON.stringify({ uris: [playbackQueue[queueIndex]] }),
@@ -582,6 +604,8 @@ async function playQueuedTrack(index = queueIndex) {
   const settled = await playbackState();
   if (currentTrack(settled)?.uri === playbackQueue[queueIndex] && settled.paused) {
     await spotifyApi(`/me/player/play?device_id=${encodeURIComponent(selectedId)}`, { method: "PUT" });
+  } else if (settled) {
+    observeQueueState(settled);
   }
 }
 
@@ -612,26 +636,73 @@ function handlePlaybackError(message) {
 }
 
 function observeQueueState(state) {
-  if (!state || queueIndex < 0 || !playbackQueue.length) return;
+  if (queueIndex < 0 || !playbackQueue.length) return;
+  if (!state) return;
   const track = currentTrack(state);
-  if (track?.uri !== playbackQueue[queueIndex]) return;
+  if (track?.uri !== playbackQueue[queueIndex]) {
+    if (queueTrackStarted && queueEndDeadline && Date.now() >= queueEndDeadline - 1500) beginQueueAdvance(state);
+    return;
+  }
   const position = state.position || 0;
   const duration = state.duration || 0;
   queueMaxPosition = Math.max(queueMaxPosition, position);
   if (!state.paused && position > 0) queueTrackStarted = true;
+  if (queueTrackStarted && !state.paused && duration > position) armQueueEndTimer(state);
   const ended = queueTrackStarted && duration > 0
     && (position >= duration
       || (state.paused && position < 1000 && queueMaxPosition >= duration - 2000));
-  if (!ended || queueAdvanceTimer || queueIndex >= playbackQueue.length - 1) return;
+  if (ended) beginQueueAdvance(state);
+}
+
+function armQueueEndTimer(state) {
+  const remaining = Math.max(0, (state.duration || 0) - (state.position || 0));
+  if (!remaining) return;
+  const deadline = Date.now() + remaining + 900;
+  if (queueEndTimer && Math.abs(deadline - queueEndDeadline) < 1200) return;
+  if (queueEndTimer) window.clearTimeout(queueEndTimer);
+  queueEndDeadline = deadline;
+  const generation = queueGeneration;
+  const expectedUri = playbackQueue[queueIndex];
+  queueEndTimer = window.setTimeout(() => verifyQueueEnd(generation, expectedUri), Math.max(250, deadline - Date.now()));
+}
+
+async function verifyQueueEnd(generation, expectedUri) {
+  queueEndTimer = null;
+  queueEndDeadline = 0;
+  if (generation !== queueGeneration || expectedUri !== playbackQueue[queueIndex] || queueAdvanceTimer) return;
+  let state = null;
+  try { state = await playbackState(); }
+  catch { /* A missing end state is handled below after a track has started. */ }
+  if (generation !== queueGeneration || expectedUri !== playbackQueue[queueIndex]) return;
+  const track = currentTrack(state);
+  if (track?.uri === expectedUri) {
+    const remaining = Math.max(0, (state.duration || 0) - (state.position || 0));
+    if (!state.paused && remaining > 500) {
+      armQueueEndTimer(state);
+      return;
+    }
+    if (state.paused && remaining > 1500 && (state.position || 0) > 1000) return;
+  }
+  if (queueTrackStarted) beginQueueAdvance(state);
+}
+
+function beginQueueAdvance(state) {
+  if (queueAdvanceTimer || queueIndex >= playbackQueue.length - 1) return;
+  const generation = queueGeneration;
+  const nextIndex = queueIndex + 1;
   queueTrackStarted = false;
   queueInGap = true;
-  if (!state.paused) pausePlayback().catch(() => {});
+  if (queueEndTimer) window.clearTimeout(queueEndTimer);
+  queueEndTimer = null;
+  queueEndDeadline = 0;
+  if (state && !state.paused) pausePlayback().catch(() => {});
   dom.status.textContent = gapSeconds > 0 ? `곡간 무음 · ${gapLabel(gapSeconds)}` : "다음 곡 준비 중";
   dom.equalizer.classList.remove("active");
   dom.playerBar.classList.remove("playing");
   queueAdvanceTimer = window.setTimeout(() => {
     queueAdvanceTimer = null;
-    playQueuedTrack(queueIndex + 1).catch((error) => showToast(error.message, "error", 7000));
+    if (generation !== queueGeneration || nextIndex !== queueIndex + 1) return;
+    playQueuedTrack(nextIndex).catch((error) => showToast(error.message, "error", 7000));
   }, Math.round(gapSeconds * 1000));
 }
 
