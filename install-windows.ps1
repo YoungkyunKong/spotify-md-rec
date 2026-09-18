@@ -51,6 +51,11 @@ New-AlbumDeckShortcut (Join-Path $desktop "Album Deck.lnk") $launcher "Album Dec
 New-AlbumDeckShortcut (Join-Path $startMenu "Album Deck.lnk") $launcher "Album Deck 실행" $icon
 New-AlbumDeckShortcut (Join-Path $startMenu "Album Deck Stop.lnk") $stopper "Album Deck 서버 종료" $icon
 
+$iconRefresh = Join-Path $env:SystemRoot "System32\ie4uinit.exe"
+if (Test-Path -LiteralPath $iconRefresh) {
+  & $iconRefresh -show
+}
+
 [pscustomobject]@{
   InstallPath = $installRoot
   DesktopShortcut = (Join-Path $desktop "Album Deck.lnk")
