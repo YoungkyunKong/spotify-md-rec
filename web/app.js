@@ -15,6 +15,7 @@ const SCOPES = [
 ].join(" ");
 
 const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 const dom = {
   connect: $("#connectButton"), dialog: $("#accountDialog"), dialogAction: $("#dialogAction"),
   dialogDisconnect: $("#dialogDisconnect"),
@@ -29,7 +30,7 @@ const dom = {
   nowArt: $("#nowArt"), artLink: $("#artLink"), nowTitle: $("#nowTitle"), nowArtist: $("#nowArtist"),
   trackKind: $("#trackKind"), miniArt: $("#miniArt"), miniTitle: $("#miniTitle"),
   miniArtist: $("#miniArtist"), miniSpotify: $("#miniSpotifyLink"), status: $("#playerStatus"),
-  output: $("#outputStatus"), equalizer: $("#equalizer"), heroDisc: $(".hero-disc"), attribution: $("#spotifyAttribution"),
+  output: $("#outputStatus"), equalizer: $("#equalizer"), heroDiscs: $$(".hero-disc"), attribution: $("#spotifyAttribution"),
   toast: $("#toastRegion"), settings: $("#settingsDialog"), settingsButton: $("#settingsButton"),
   settingsCancel: $("#settingsCancel"), settingsSave: $("#settingsSave"), gapInput: $("#gapInput"),
   gapValue: $("#gapValue"), gapBadge: $("#gapBadge"),
@@ -555,7 +556,7 @@ function currentTrack(state) {
 function setPlaybackActivity(playing) {
   const active = Boolean(playing) && !queueInGap;
   dom.equalizer.classList.toggle("active", active);
-  dom.heroDisc.classList.toggle("active", active);
+  dom.heroDiscs.forEach((disc) => disc.classList.toggle("active", active));
 }
 
 function renderState(state) {
