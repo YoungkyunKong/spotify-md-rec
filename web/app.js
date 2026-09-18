@@ -356,8 +356,10 @@ async function accessToken() {
 async function spotifyApi(path, options = {}) {
   const backoffSeconds = Math.ceil((spotifyBackoffUntil - Date.now()) / 1000);
   if (backoffSeconds > 0) {
-    const prefix = spotifyBackoffReason === "quota" ? "Spotify 개발 모드 할당량에 도달했습니다." : "Spotify 요청 한도에 도달했습니다.";
-    throw new Error(`${prefix} ${backoffSeconds}초 후 다시 시도해 주세요.`);
+    if (spotifyBackoffReason === "quota") {
+      throw new Error(`Spotify 개발 모드 할당량에 도달했습니다. 리셋 시각은 공개되지 않았으며, 앱이 재요청을 ${backoffSeconds}초 동안 중지합니다.`);
+    }
+    throw new Error(`Spotify 요청 한도에 도달했습니다. ${backoffSeconds}초 후 다시 시도해 주세요.`);
   }
   const bearer = await accessToken();
   const url = path.startsWith("https://")
@@ -400,7 +402,9 @@ function spotifyError(response, data) {
     spotifyBackoffUntil = Math.max(spotifyBackoffUntil, Date.now() + waitSeconds * 1000);
     spotifyBackoffReason = quotaExceeded ? "quota" : "rate";
     return new Error(quotaExceeded
-      ? `Spotify 개발 모드 할당량에 도달했습니다. ${waitSeconds}초 후 다시 시도해 주세요. (${detail})`
+      ? (Number.isFinite(headerSeconds) && headerSeconds > 0
+        ? `Spotify 개발 모드 할당량에 도달했습니다. Spotify가 ${waitSeconds}초 후 재시도를 요청했습니다. (${detail})`
+        : `Spotify 개발 모드 할당량에 도달했습니다. Spotify는 리셋 시각을 제공하지 않았으며, 앱이 5분 동안 재요청을 중지합니다. (${detail})`)
       : `Spotify 요청 한도에 도달했습니다. ${waitSeconds}초 후 다시 시도해 주세요. (${detail})`);
   }
   return new Error(`Spotify API 오류 (${response.status}): ${detail}`);
