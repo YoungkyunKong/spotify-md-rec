@@ -37,11 +37,12 @@ if (-not (Test-AlbumDeck)) {
 }
 
 $browserCandidates = @(
+  (Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"),
+  (Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"),
+  (Join-Path $env:LOCALAPPDATA "Microsoft\Edge\Application\msedge.exe"),
   (Join-Path $env:ProgramFiles "Google\Chrome\Application\chrome.exe"),
   (Join-Path ${env:ProgramFiles(x86)} "Google\Chrome\Application\chrome.exe"),
-  (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe"),
-  (Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"),
-  (Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe")
+  (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe")
 )
 $browser = $browserCandidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
 
