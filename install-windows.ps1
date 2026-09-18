@@ -5,6 +5,15 @@ $installRoot = Join-Path $env:LOCALAPPDATA "Programs\AlbumDeck"
 $startMenu = Join-Path ([Environment]::GetFolderPath("StartMenu")) "Programs"
 $desktop = [Environment]::GetFolderPath("Desktop")
 
+$nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
+if (-not $nodeCommand) {
+  throw "Node.js 20 이상이 필요합니다. Node.js를 설치한 뒤 다시 실행해 주세요."
+}
+$nodeMajor = [int]((& $nodeCommand.Source --version).TrimStart("v").Split(".")[0])
+if ($nodeMajor -lt 20) {
+  throw "Node.js 20 이상이 필요합니다. 현재 버전: $(& $nodeCommand.Source --version)"
+}
+
 $oldStop = Join-Path $installRoot "windows\stop.ps1"
 if (Test-Path -LiteralPath $oldStop) {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $oldStop
@@ -13,30 +22,34 @@ if (Test-Path -LiteralPath $oldStop) {
 New-Item -ItemType Directory -Force -Path $installRoot | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "web") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "windows") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "assets") | Out-Null
 
 Copy-Item -LiteralPath (Join-Path $sourceRoot "package.json") -Destination $installRoot -Force
 Copy-Item -LiteralPath (Join-Path $sourceRoot "package-lock.json") -Destination $installRoot -Force
 Copy-Item -LiteralPath (Join-Path $sourceRoot "server.mjs") -Destination $installRoot -Force
 Copy-Item -Path (Join-Path $sourceRoot "web\*") -Destination (Join-Path $installRoot "web") -Recurse -Force
 Copy-Item -Path (Join-Path $sourceRoot "windows\*") -Destination (Join-Path $installRoot "windows") -Recurse -Force
+Copy-Item -Path (Join-Path $sourceRoot "assets\*") -Destination (Join-Path $installRoot "assets") -Recurse -Force
 
 $shell = New-Object -ComObject WScript.Shell
 $powershell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 
-function New-AlbumDeckShortcut($path, $script, $description) {
+function New-AlbumDeckShortcut($path, $script, $description, $icon) {
   $shortcut = $shell.CreateShortcut($path)
   $shortcut.TargetPath = $powershell
   $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
   $shortcut.WorkingDirectory = $installRoot
   $shortcut.Description = $description
+  $shortcut.IconLocation = "$icon,0"
   $shortcut.Save()
 }
 
 $launcher = Join-Path $installRoot "windows\launch.ps1"
 $stopper = Join-Path $installRoot "windows\stop.ps1"
-New-AlbumDeckShortcut (Join-Path $desktop "Album Deck.lnk") $launcher "Album Deck 실행"
-New-AlbumDeckShortcut (Join-Path $startMenu "Album Deck.lnk") $launcher "Album Deck 실행"
-New-AlbumDeckShortcut (Join-Path $startMenu "Album Deck Stop.lnk") $stopper "Stop Album Deck server"
+$icon = Join-Path $installRoot "assets\album-deck.ico"
+New-AlbumDeckShortcut (Join-Path $desktop "Album Deck.lnk") $launcher "Album Deck 실행" $icon
+New-AlbumDeckShortcut (Join-Path $startMenu "Album Deck.lnk") $launcher "Album Deck 실행" $icon
+New-AlbumDeckShortcut (Join-Path $startMenu "Album Deck Stop.lnk") $stopper "Album Deck 서버 종료" $icon
 
 [pscustomobject]@{
   InstallPath = $installRoot

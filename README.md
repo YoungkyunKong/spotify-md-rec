@@ -22,7 +22,7 @@ npm start
 
 브라우저에서 [http://127.0.0.1:8888](http://127.0.0.1:8888)을 엽니다. Spotify 연결을 누르면 PKCE 로그인 후 앱으로 돌아옵니다. 로그인 화면은 매번 승인 대화상자를 표시하므로 현재 계정이 다르면 Spotify 화면의 **Not you?** 링크로 다른 계정을 선택할 수 있습니다. 연결된 뒤에는 우측 상단 **Spotify 연결됨**에서 **다른 계정으로 연결** 또는 **연결 해제**를 선택합니다. `Ctrl+C`로 정적 파일 서버를 종료합니다.
 
-Windows에 사용자 앱으로 설치하려면 `install-windows.ps1`을 실행합니다. `%LOCALAPPDATA%\Programs\AlbumDeck`에 복사되고 바탕 화면과 시작 메뉴에 **Album Deck** 바로가기가 생성됩니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않고 기존 브라우저 프로필의 로그인 정보와 설정은 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
+Windows에 사용자 앱으로 설치하려면 `install-windows.cmd`를 더블 클릭하거나 PowerShell에서 `install-windows.ps1`을 실행합니다. 설치 프로그램은 Node.js 20 이상을 확인하고 `%LOCALAPPDATA%\Programs\AlbumDeck`에 앱을 복사한 뒤, MiniDisc 아이콘이 적용된 **Album Deck** 바로가기를 바탕 화면과 시작 메뉴에 자동 등록합니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않고 기존 브라우저 프로필의 로그인 정보와 설정은 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
 
 ## Node.js 앱 배포
 
