@@ -936,9 +936,10 @@ function makePlaylistCard(playlist) {
   const copy = make("div", "playlist-copy");
   const trackTotal = playlist.items?.total ?? playlist.tracks?.total;
   copy.append(make("strong", "", playlist.name), make("span", "", `${trackTotal ?? "—"}곡 · PLAYLIST`));
-  const button = make("button", "playlist-play", "▶");
+  const button = make("button", "playlist-play");
   button.type = "button";
   button.title = "플레이리스트 재생";
+  button.setAttribute("aria-label", `${playlist.name} 재생`);
   button.addEventListener("click", (event) => { event.stopPropagation(); playContext(playlist.uri, playlist.name); });
   const external = make("a", "playlist-open-link", "↗");
   external.href = playlist.external_urls?.spotify || "https://open.spotify.com";

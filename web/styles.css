@@ -132,7 +132,8 @@ h1 em { color: var(--mint); font-style: normal; }
 .playlist-copy span { display: block; margin-top: 3px; color: #879189; font-size: 11px; }
 .playlist-open-link { color: #869087; text-decoration: none; font-size: 12px; opacity: 0; }
 .playlist-card:hover .playlist-open-link, .playlist-card:focus-within .playlist-open-link { opacity: 1; }
-.playlist-play { display: grid; place-items: center; width: 27px; height: 27px; color: #1a2113; background: var(--mint); border: 0; border-radius: 50%; opacity: 0; cursor: pointer; font-size: 9px; padding-left: 2px; transition: .15s; flex: none; }
+.playlist-play { position: relative; width: 27px; height: 27px; padding: 0; color: #1a2113; background: var(--mint); border: 0; border-radius: 50%; opacity: 0; cursor: pointer; font-size: 0; transition: .15s; flex: none; }
+.playlist-play::before { content: ""; position: absolute; left: 50%; top: calc(50% + .5px); width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid #1a2113; transform: translate(-38%,-50%); }
 .playlist-card:hover .playlist-play { opacity: 1; }
 .content-footer { display: flex; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 26px; color: #606a62; font-size: 9px; }
 .content-footer span:last-child { font: 9px var(--mono); letter-spacing: .6px; }.content-footer a { text-decoration: none; color: #8f9b90; }
