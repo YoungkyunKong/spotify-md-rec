@@ -10,7 +10,7 @@
 - 로컬 실행 시 Spotify 앱 설정에 Redirect URI `http://127.0.0.1:8888/callback`을 등록합니다.
 - Web Playback SDK를 앱에서 사용할 수 있도록 설정합니다.
 
-기본 Client ID는 `4f876bef5a0b46f2931b4b5e1cae8af1`입니다. 다른 앱을 쓰려면 `SPOTIFY_CLIENT_ID` 환경 변수를 지정합니다. Client Secret은 사용하지 않습니다.
+앱을 처음 실행한 뒤 상단 **설정**에서 자신의 Spotify Developer 앱 Client ID와 Redirect URI를 입력합니다. 설정값은 해당 브라우저의 로컬 저장소에 보관되며 Client Secret은 사용하지 않습니다.
 
 ## 실행
 
@@ -20,7 +20,7 @@
 npm start
 ```
 
-브라우저에서 [http://127.0.0.1:8888](http://127.0.0.1:8888)을 엽니다. Spotify 연결을 누르면 PKCE 로그인 후 앱으로 돌아옵니다. 로그인 화면은 매번 승인 대화상자를 표시하므로 현재 계정이 다르면 Spotify 화면의 **Not you?** 링크로 다른 계정을 선택할 수 있습니다. 연결된 뒤에는 우측 상단 **Spotify 연결됨**에서 **다른 계정으로 연결** 또는 **연결 해제**를 선택합니다. `Ctrl+C`로 정적 파일 서버를 종료합니다.
+브라우저에서 [http://127.0.0.1:8888](http://127.0.0.1:8888)을 열고 **설정**에 Client ID와 `http://127.0.0.1:8888/callback`을 입력합니다. Spotify 연결을 누르면 PKCE 로그인 후 앱으로 돌아옵니다. 로그인 화면은 매번 승인 대화상자를 표시하므로 현재 계정이 다르면 Spotify 화면의 **Not you?** 링크로 다른 계정을 선택할 수 있습니다. 연결된 뒤에는 우측 상단 **Spotify 연결됨**에서 **다른 계정으로 연결** 또는 **연결 해제**를 선택합니다. `Ctrl+C`로 정적 파일 서버를 종료합니다.
 
 Windows에 사용자 앱으로 설치하려면 `install-windows.cmd`를 더블 클릭하거나 PowerShell에서 `install-windows.ps1`을 실행합니다. 설치 프로그램은 Node.js 20 이상을 확인하고 `%LOCALAPPDATA%\Programs\AlbumDeck`에 앱을 복사한 뒤, MiniDisc 아이콘이 적용된 **Album Deck** 바로가기를 바탕 화면과 시작 메뉴에 자동 등록합니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않고 기존 브라우저 프로필의 로그인 정보와 설정은 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
 
@@ -37,10 +37,10 @@ Start Command: npm start
 Health Check Path: /healthz
 ```
 
-다른 Node 호스팅에서는 `Procfile`의 `web: npm start`를 사용할 수 있습니다. Client ID를 바꾸는 경우에만 다음 환경 변수를 지정합니다.
+다른 Node 호스팅에서는 `Procfile`의 `web: npm start`를 사용할 수 있습니다. 사용자가 설정 화면에서 직접 입력하는 대신 초기값을 배포 환경에서 제공하려면 다음 환경 변수를 선택적으로 지정합니다.
 
 ```text
-SPOTIFY_CLIENT_ID=4f876bef5a0b46f2931b4b5e1cae8af1
+SPOTIFY_CLIENT_ID=your_spotify_client_id
 ```
 
 `PUBLIC_URL=https://실제-배포-도메인`을 선택적으로 지정하면 OAuth 콜백 주소를 해당 도메인으로 고정합니다. 지정하지 않으면 브라우저에 열린 현재 HTTPS 주소를 자동 사용합니다.
@@ -59,13 +59,13 @@ https://실제-배포-도메인/callback
 
 - **앨범 찾기**에서 앨범명이나 아티스트를 검색하고 앨범 카드를 눌러 전체 앨범을 재생합니다.
 - **내 플레이리스트**에서 재생할 목록을 선택합니다. 원본 목록을 수정하지 않습니다.
-- 설정에서 이 브라우저 또는 계정에 연결된 다른 Spotify Connect 장치를 재생 대상으로 선택합니다.
+- **설정**에서 Spotify Client ID와 Redirect URI를 입력하고, 이 브라우저 또는 계정에 연결된 다른 Spotify Connect 장치를 재생 대상으로 선택합니다.
 - 이 브라우저로 재생할 때 **Windows 출력 설정 열기**를 눌러 브라우저 소리를 오디오 인터페이스로 보낼 수 있습니다.
-- 상단의 **재생 설정**에서 0~30초 사이의 곡간 무음을 0.5초 단위로 지정합니다. 설정은 이 브라우저에 저장됩니다.
+- 상단의 **설정**에서 0~30초 사이의 곡간 무음을 0.5초 단위로 지정합니다. 설정은 이 브라우저에 저장됩니다.
 - 아래 플레이어에서 재생·일시정지, 이전/다음 곡, 탐색과 볼륨을 조절합니다.
 - 오른쪽 재생 정보와 Spotify 링크에서 현재 트랙과 앨범을 확인할 수 있습니다.
 
-재생 설정에서 Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치를 선택할 수 있습니다. 곡별 대기열과 무음 전환은 이 웹 앱이 제어하므로 탭을 닫거나 장치가 절전 상태가 되면 다음 곡 전환이 중단될 수 있습니다. SDK 초기화 오류가 나면 최신 Chrome/Edge에서 보호된 콘텐츠 재생(EME)을 허용하고 다시 연결하세요.
+설정에서 Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치를 선택할 수 있습니다. 곡별 대기열과 무음 전환은 이 웹 앱이 제어하므로 탭을 닫거나 장치가 절전 상태가 되면 다음 곡 전환이 중단될 수 있습니다. SDK 초기화 오류가 나면 최신 Chrome/Edge에서 보호된 콘텐츠 재생(EME)을 허용하고 다시 연결하세요.
 
 Spotify Web Playback SDK는 Premium 계정이 필요합니다. SDK가 브라우저 안에 별도 Spotify Connect 재생 기기를 만들고, 앱은 앨범·플레이리스트의 곡 목록을 읽어 그 기기에서 한 곡씩 순서대로 재생합니다. [공식 SDK 안내](https://developer.spotify.com/documentation/web-playback-sdk), [재생 API](https://developer.spotify.com/documentation/web-api/reference/start-a-users-playback).
 

@@ -1,9 +1,9 @@
 const runtimeConfig = window.ALBUM_DECK_CONFIG || {};
-const CLIENT_ID = runtimeConfig.clientId || "4f876bef5a0b46f2931b4b5e1cae8af1";
-const REDIRECT_URI = runtimeConfig.redirectUri || `${location.origin}/callback`;
 const TOKEN_KEY = "albumdeck.spotify.session.v1";
+const SPOTIFY_CONFIG_KEY = "albumdeck.spotify.config.v1";
 const GAP_KEY = "albumdeck.playback.gap-seconds.v1";
 const DEVICE_KEY = "albumdeck.playback.device.v1";
+const DEFAULT_REDIRECT_URI = `${location.origin}/callback`;
 const SCOPES = [
   "streaming",
   "user-read-private",
@@ -34,12 +34,14 @@ const dom = {
   toast: $("#toastRegion"), settings: $("#settingsDialog"), settingsButton: $("#settingsButton"),
   settingsCancel: $("#settingsCancel"), settingsSave: $("#settingsSave"), gapInput: $("#gapInput"),
   gapValue: $("#gapValue"), gapBadge: $("#gapBadge"),
+  clientIdInput: $("#clientIdInput"), redirectUriInput: $("#redirectUriInput"),
   deviceSelect: $("#deviceSelect"), refreshDevices: $("#refreshDevices"),
   localOutput: $("#localOutputSetting"), openSoundSettings: $("#openSoundSettings"),
   queueTitle: $("#contextQueueTitle"), queueCount: $("#contextQueueCount"), queueList: $("#contextTrackList"),
 };
 
 let token = readSession();
+let spotifyConfig = readSpotifyConfig();
 let player = null;
 let deviceId = null;
 let currentState = null;
@@ -68,6 +70,41 @@ let spotifyBackoffUntil = 0;
 let spotifyBackoffReason = "rate";
 let lastRemotePollAt = 0;
 let remoteStateObservedAt = 0;
+
+function readSpotifyConfig() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SPOTIFY_CONFIG_KEY) || "null");
+    return {
+      clientId: String(saved?.clientId || runtimeConfig.clientId || "").trim(),
+      redirectUri: String(saved?.redirectUri || runtimeConfig.redirectUri || DEFAULT_REDIRECT_URI).trim(),
+    };
+  } catch {
+    return {
+      clientId: String(runtimeConfig.clientId || "").trim(),
+      redirectUri: String(runtimeConfig.redirectUri || DEFAULT_REDIRECT_URI).trim(),
+    };
+  }
+}
+
+function validateSpotifyConfig(clientId, redirectUri) {
+  const normalizedClientId = String(clientId || "").trim();
+  if (!normalizedClientId) throw new Error("Spotify Client ID를 입력해 주세요.");
+  if (!/^[A-Za-z0-9]{16,64}$/.test(normalizedClientId)) throw new Error("Spotify Client ID 형식을 확인해 주세요.");
+  let url;
+  try { url = new URL(String(redirectUri || "").trim()); }
+  catch { throw new Error("Redirect URI를 올바른 주소로 입력해 주세요."); }
+  const loopback = url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "[::1]";
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) {
+    throw new Error("Redirect URI는 HTTPS 또는 로컬 주소를 사용해야 합니다.");
+  }
+  url.hash = "";
+  return { clientId: normalizedClientId, redirectUri: url.href };
+}
+
+function updateSpotifySettingsUi() {
+  dom.clientIdInput.value = spotifyConfig.clientId;
+  dom.redirectUriInput.value = spotifyConfig.redirectUri || DEFAULT_REDIRECT_URI;
+}
 
 function readGapSeconds() {
   try {
@@ -156,7 +193,8 @@ function selectedDeviceFromSettings() {
   if (dom.deviceSelect.value === "browser") return { mode: "browser", name: "이 브라우저" };
   const id = dom.deviceSelect.value.replace(/^spotify:/, "");
   const device = availableDevices.find((item) => item.id === id);
-  if (!device) throw new Error("선택한 Spotify 장치가 더 이상 연결되어 있지 않습니다.");
+  if (!device && targetDevice.mode === "spotify" && targetDevice.id === id) return targetDevice;
+  if (!device) throw new Error("선택한 Spotify 장치를 찾을 수 없습니다. 장치를 새로고침해 주세요.");
   return { mode: "spotify", id: device.id, name: device.name, type: device.type, supports_volume: device.supports_volume !== false };
 }
 
@@ -178,7 +216,7 @@ function saveSession(value) {
   updateConnection(true);
 }
 
-function clearSession() {
+function clearSession({ preserveDevice = false } = {}) {
   localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
   token = null;
@@ -194,9 +232,11 @@ function clearSession() {
   queueEndDeadline = 0;
   queueGeneration += 1;
   queueInGap = false;
-  targetDevice = { mode: "browser", name: "이 브라우저" };
+  if (!preserveDevice) targetDevice = { mode: "browser", name: "이 브라우저" };
   availableDevices = [];
-  try { localStorage.removeItem(DEVICE_KEY); } catch { /* Ignore unavailable storage. */ }
+  if (!preserveDevice) {
+    try { localStorage.removeItem(DEVICE_KEY); } catch { /* Ignore unavailable storage. */ }
+  }
   if (player) { player.disconnect(); player = null; }
   updateConnection(false);
   renderState(null);
@@ -282,7 +322,7 @@ async function finishAuthorization() {
   setBusy(true);
   try {
     const result = await tokenRequest({
-      grant_type: "authorization_code", code, redirect_uri: REDIRECT_URI, code_verifier: verifier,
+      grant_type: "authorization_code", code, redirect_uri: spotifyConfig.redirectUri, code_verifier: verifier,
     });
     saveSession({ ...result, expires_at: Date.now() + result.expires_in * 1000 });
     showToast("Spotify에 연결했습니다.");
@@ -316,14 +356,15 @@ async function initializeConnectedApp() {
 }
 
 async function startAuthorization() {
+  const config = validateSpotifyConfig(spotifyConfig.clientId, spotifyConfig.redirectUri);
   const verifier = randomToken(48);
   const state = randomToken(24);
   sessionStorage.setItem("albumdeck.oauth.verifier", verifier);
   sessionStorage.setItem("albumdeck.oauth.state", state);
   const params = new URLSearchParams({
-    client_id: CLIENT_ID,
+    client_id: config.clientId,
     response_type: "code",
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: config.redirectUri,
     scope: SCOPES,
     state,
     show_dialog: "true",
@@ -334,10 +375,11 @@ async function startAuthorization() {
 }
 
 async function tokenRequest(fields) {
+  const config = validateSpotifyConfig(spotifyConfig.clientId, spotifyConfig.redirectUri);
   const response = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ client_id: CLIENT_ID, ...fields }),
+    body: new URLSearchParams({ client_id: config.clientId, ...fields }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error_description || data.error || `Spotify 로그인 오류 (${response.status})`);
@@ -995,6 +1037,13 @@ function openAccountDialog() {
   dom.dialog.showModal();
 }
 
+async function openSettingsDialog() {
+  updateGapUi();
+  updateSpotifySettingsUi();
+  dom.settings.showModal();
+  await refreshDeviceOptions();
+}
+
 function setView(view) {
   activeView = view;
   const playlists = view === "playlists";
@@ -1010,12 +1059,16 @@ dom.searchForm.addEventListener("submit", (event) => {
   if (!token) { openAccountDialog(); return; }
   searchAlbums(dom.searchInput.value);
 });
-dom.connect.addEventListener("click", () => token ? openAccountDialog() : startAuthorization().catch((error) => showToast(error.message, "error")));
-dom.settingsButton.addEventListener("click", async () => {
-  updateGapUi();
-  dom.settings.showModal();
-  await refreshDeviceOptions();
+dom.connect.addEventListener("click", () => {
+  if (token) { openAccountDialog(); return; }
+  if (!spotifyConfig.clientId) {
+    openSettingsDialog().catch((error) => showToast(error.message, "error"));
+    showToast("설정에서 Spotify Client ID를 먼저 입력해 주세요.", "warning");
+    return;
+  }
+  startAuthorization().catch((error) => showToast(error.message, "error"));
 });
+dom.settingsButton.addEventListener("click", () => openSettingsDialog().catch((error) => showToast(error.message, "error")));
 dom.refreshDevices.addEventListener("click", refreshDeviceOptions);
 dom.deviceSelect.addEventListener("change", () => { dom.localOutput.hidden = dom.deviceSelect.value !== "browser"; });
 dom.openSoundSettings.addEventListener("click", () => {
@@ -1025,20 +1078,28 @@ dom.openSoundSettings.addEventListener("click", () => {
 dom.gapInput.addEventListener("input", () => { dom.gapValue.textContent = gapLabel(dom.gapInput.value); });
 dom.settingsCancel.addEventListener("click", () => {
   updateGapUi();
+  updateSpotifySettingsUi();
   dom.settings.close();
 });
 dom.settingsSave.addEventListener("click", () => {
   try {
+    const nextSpotifyConfig = validateSpotifyConfig(dom.clientIdInput.value, dom.redirectUriInput.value);
+    const clientChanged = nextSpotifyConfig.clientId !== spotifyConfig.clientId;
     const value = Math.min(30, Math.max(0, Math.round(Number(dom.gapInput.value) * 2) / 2));
     gapSeconds = Number.isFinite(value) ? value : 2;
     targetDevice = selectedDeviceFromSettings();
+    spotifyConfig = nextSpotifyConfig;
+    localStorage.setItem(SPOTIFY_CONFIG_KEY, JSON.stringify(spotifyConfig));
     localStorage.setItem(GAP_KEY, String(gapSeconds));
     localStorage.setItem(DEVICE_KEY, JSON.stringify(targetDevice));
+    if (clientChanged && token) clearSession({ preserveDevice: true });
     currentState = null;
     updateGapUi();
     updateOutputLabel();
     dom.settings.close();
-    showToast(`${targetDevice.name} · 곡간 무음 ${gapLabel(gapSeconds)}로 설정했습니다.`);
+    showToast(clientChanged && !token
+      ? "Spotify 앱 설정을 저장했습니다. Spotify에 다시 연결해 주세요."
+      : `${targetDevice.name} · 곡간 무음 ${gapLabel(gapSeconds)}로 설정했습니다.`);
   } catch (error) {
     showToast(error.message, "error", 7000);
   }
@@ -1052,6 +1113,11 @@ dom.dialogDisconnect.addEventListener("click", () => {
 dom.dialogAction.addEventListener("click", async () => {
   dom.dialog.close();
   if (dom.dialogAction.dataset.action === "switch") clearSession();
+  if (!spotifyConfig.clientId) {
+    await openSettingsDialog();
+    showToast("Spotify Client ID를 입력한 뒤 저장해 주세요.", "warning");
+    return;
+  }
   startAuthorization().catch((error) => showToast(error.message, "error"));
 });
 dom.refreshPlaylists.addEventListener("click", () => loadPlaylists().catch((error) => showToast(error.message, "error")));

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(fileURLToPath(new URL("./web/", import.meta.url)));
 const port = Number(process.env.PORT || 8888);
 const host = process.env.HOST || "0.0.0.0";
-const clientId = process.env.SPOTIFY_CLIENT_ID || "4f876bef5a0b46f2931b4b5e1cae8af1";
+const clientId = process.env.SPOTIFY_CLIENT_ID || null;
 const publicUrl = process.env.PUBLIC_URL ? new URL(process.env.PUBLIC_URL) : null;
 if (publicUrl && publicUrl.protocol !== "https:" && publicUrl.hostname !== "127.0.0.1" && publicUrl.hostname !== "[::1]") {
   throw new Error("PUBLIC_URL must use HTTPS except for a loopback address.");
