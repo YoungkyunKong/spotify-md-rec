@@ -6,7 +6,7 @@
 
 - Node.js 20 이상
 - Spotify Premium 계정
-- 앱 계정이 Spotify Developer Dashboard의 사용자 목록에 등록되어 있어야 합니다.
+- Spotify 앱이 개발 모드라면 재생할 계정을 Spotify Developer Dashboard의 사용자 목록에 등록합니다.
 - 로컬 실행 시 Spotify 앱 설정에 Redirect URI `http://127.0.0.1:8888/callback`을 등록합니다.
 - Web Playback SDK를 앱에서 사용할 수 있도록 설정합니다.
 
@@ -22,7 +22,29 @@ npm start
 
 브라우저에서 [http://127.0.0.1:8888](http://127.0.0.1:8888)을 열고 **설정**에 Client ID와 `http://127.0.0.1:8888/callback`을 입력합니다. Spotify 연결을 누르면 PKCE 로그인 후 앱으로 돌아옵니다. 로그인 화면은 매번 승인 대화상자를 표시하므로 현재 계정이 다르면 Spotify 화면의 **Not you?** 링크로 다른 계정을 선택할 수 있습니다. 연결된 뒤에는 우측 상단 **Spotify 연결됨**에서 **다른 계정으로 연결** 또는 **연결 해제**를 선택합니다. `Ctrl+C`로 정적 파일 서버를 종료합니다.
 
-Windows에 사용자 앱으로 설치하려면 `install-windows.cmd`를 더블 클릭하거나 PowerShell에서 `install-windows.ps1`을 실행합니다. 설치 프로그램은 Node.js 20 이상을 확인하고 `%LOCALAPPDATA%\Programs\AlbumDeck`에 앱을 복사한 뒤, MiniDisc 아이콘이 적용된 **Album Deck** 바로가기를 바탕 화면과 시작 메뉴에 자동 등록합니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않고 기존 브라우저 프로필의 로그인 정보와 설정은 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
+## Windows 설치 및 업데이트
+
+현재 GitHub Releases의 EXE 설치 프로그램은 사용하지 않습니다. 저장소 소스를 받아 포함된 설치 스크립트로 설치합니다.
+
+Git을 사용하는 경우:
+
+```powershell
+git clone https://github.com/YoungkyunKong/spotify-md-rec.git
+cd spotify-md-rec
+.\install-windows.cmd
+```
+
+Git을 사용하지 않는 경우 GitHub의 **Code → Download ZIP**으로 소스를 내려받아 압축을 푼 다음 `install-windows.cmd`를 더블 클릭합니다. PowerShell에서 직접 실행하려면 다음 명령을 사용합니다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
+```
+
+설치 스크립트는 Node.js 20 이상을 확인하고 `%LOCALAPPDATA%\Programs\AlbumDeck`에 앱을 복사한 뒤 MiniDisc 아이콘이 적용된 **Album Deck** 바로가기를 바탕 화면과 시작 메뉴에 등록합니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않습니다.
+
+설치 후 **Album Deck** 바로가기를 실행하고 상단 **설정**에 Spotify Client ID와 `http://127.0.0.1:8888/callback`을 입력한 다음 **Spotify 연결**을 누릅니다. Client ID, 로그인 토큰, 재생 장치와 무음 길이는 브라우저에 저장되어 앱과 PC를 다시 시작해도 유지됩니다.
+
+업데이트할 때는 저장소에서 최신 파일을 받거나 새 ZIP을 푼 뒤 `install-windows.cmd`를 다시 실행합니다. 기존 서버를 종료하고 앱 파일과 바로가기를 갱신하며, 같은 브라우저 프로필을 사용하는 한 저장된 설정과 로그인 정보는 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
 
 ## Node.js 앱 배포
 
