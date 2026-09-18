@@ -65,6 +65,7 @@ let volumeTimer = null;
 let spotifyBackoffUntil = 0;
 let spotifyBackoffReason = "rate";
 let lastRemotePollAt = 0;
+let remoteStateObservedAt = 0;
 
 function readGapSeconds() {
   try {
@@ -470,6 +471,10 @@ async function connectPlayer() {
 async function pollPlayer() {
   if (!player) return;
   if (!usesBrowserPlayer()) {
+    if (queueIndex >= 0 && (queueTrackStarted || queueInGap || queueEndTimer)) {
+      renderEstimatedRemoteProgress();
+      return;
+    }
     const now = Date.now();
     if (now - lastRemotePollAt < 10_000 || now < spotifyBackoffUntil) return;
     lastRemotePollAt = now;
@@ -483,6 +488,15 @@ async function pollPlayer() {
       observeQueueState(null);
     }
   } catch { /* Keep the last known state during a transient device/API failure. */ }
+}
+
+function renderEstimatedRemoteProgress() {
+  if (!currentState || currentState.paused || !remoteStateObservedAt || seeking) return;
+  const duration = currentState.duration || 0;
+  const position = Math.min(duration, (currentState.position || 0) + Date.now() - remoteStateObservedAt);
+  dom.elapsed.textContent = timeLabel(position);
+  dom.seek.max = String(Math.max(1, duration || 1));
+  dom.seek.value = String(position);
 }
 
 async function playbackState() {
@@ -534,6 +548,7 @@ function currentTrack(state) {
 
 function renderState(state) {
   currentState = state;
+  if (!usesBrowserPlayer() && state) remoteStateObservedAt = Date.now();
   const track = currentTrack(state);
   if (!track) {
     dom.equalizer.classList.remove("active");
@@ -622,8 +637,13 @@ async function playQueuedTrack(index = queueIndex) {
   });
   const loaded = await waitForQueuedTrack(playbackQueue[queueIndex], usesBrowserPlayer() ? 4000 : 7000);
   if (!loaded) throw new Error("요청한 곡을 플레이어에 불러오지 못했습니다.");
+  if (!usesBrowserPlayer()) {
+    renderState(loaded);
+    observeQueueState(loaded);
+  }
   await new Promise((resolve) => window.setTimeout(resolve, 700));
   const settled = await playbackState();
+  if (!usesBrowserPlayer() && settled) renderState(settled);
   if (currentTrack(settled)?.uri === playbackQueue[queueIndex] && settled.paused) {
     await spotifyApi(`/me/player/play?device_id=${encodeURIComponent(selectedId)}`, { method: "PUT" });
   } else if (settled) {
@@ -703,7 +723,10 @@ async function verifyQueueEnd(generation, expectedUri) {
       armQueueEndTimer(state);
       return;
     }
-    if (state.paused && remaining > 1500 && (state.position || 0) > 1000) return;
+    if (state.paused && remaining > 1500 && (state.position || 0) > 1000) {
+      queueTrackStarted = false;
+      return;
+    }
   }
   if (queueTrackStarted) beginQueueAdvance(state);
 }
