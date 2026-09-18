@@ -1,13 +1,47 @@
 {
   "name": "album-deck",
   "version": "1.0.0",
+  "description": "Spotify desktop player with configurable silence between tracks for MiniDisc recording",
   "private": true,
   "type": "module",
+  "main": "electron/main.mjs",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "scripts": {
-    "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check web/app.js"
+    "start": "electron .",
+    "start:web": "node server.mjs",
+    "check": "node --check server.mjs && node --check web/app.js && node --check electron/main.mjs",
+    "pack": "electron-builder --dir --win",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.albumdeck.desktop",
+    "productName": "Album Deck",
+    "asar": true,
+    "electronDownload": {
+      "mirror": "https://github.com/castlabs/electron-releases/releases/download/"
+    },
+    "files": [
+      "electron/**/*",
+      "server.mjs",
+      "web/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "Album-Deck-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Album Deck"
+    }
+  },
+  "devDependencies": {
+    "electron": "github:castlabs/electron-releases#v44.1.0+wvcus",
+    "electron-builder": "^26.15.3"
   }
 }
