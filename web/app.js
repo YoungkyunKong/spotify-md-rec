@@ -933,7 +933,8 @@ function makePlaylistCard(playlist) {
   art.alt = "";
   art.src = playlist.images?.[0]?.url || "";
   const copy = make("div", "playlist-copy");
-  copy.append(make("strong", "", playlist.name), make("span", "", `${playlist.tracks?.total ?? "—"}곡 · PLAYLIST`));
+  const trackTotal = playlist.items?.total ?? playlist.tracks?.total;
+  copy.append(make("strong", "", playlist.name), make("span", "", `${trackTotal ?? "—"}곡 · PLAYLIST`));
   const button = make("button", "playlist-play", "▶");
   button.type = "button";
   button.title = "플레이리스트 재생";
