@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101315" />
+    <title>Album Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/config.js"></script>
+    <script>window.onSpotifyWebPlaybackSDKReady = () => { window.spotifySdkReady = true; };</script>
+    <script src="https://sdk.scdn.co/spotify-player.js" async></script>
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Album Deck 홈">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span>album<span class="brand-light">deck</span></span>
+        </a>
+
+        <div class="sidebar-label">LIBRARY</div>
+        <nav class="main-nav" aria-label="주 메뉴">
+          <button class="nav-item active" data-view="search"><span class="nav-icon search-icon"></span><span>앨범 찾기</span></button>
+          <button class="nav-item" data-view="playlists"><span class="nav-icon list-icon"></span><span>내 플레이리스트</span></button>
+        </nav>
+
+        <div class="sidebar-rule"></div>
+        <div class="collection-heading">
+          <span class="sidebar-label">SPOTIFY에서 고르기</span>
+          <button class="icon-button refresh-button" id="refreshPlaylists" title="플레이리스트 새로고침" aria-label="플레이리스트 새로고침">↻</button>
+        </div>
+        <div class="playlist-shortcuts" id="playlistShortcuts">
+          <div class="sidebar-empty">Spotify에 연결하면<br />플레이리스트가 나타납니다.</div>
+        </div>
+
+        <div class="sidebar-bottom">
+          <div class="connection-card">
+            <span class="connection-dot" id="connectionDot"></span>
+            <div class="connection-copy">
+              <strong id="connectionLabel">연결 안 됨</strong>
+              <span id="accountLabel">Spotify 계정</span>
+            </div>
+            <button class="icon-button account-menu" id="accountMenu" title="연결 메뉴" aria-label="연결 메뉴">···</button>
+          </div>
+          <button class="spotify-attribution" id="spotifyAttribution" hidden>Spotify에서 재생 중 ↗</button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumbs"><span>YOUR LIBRARY</span><b>/</b><strong id="crumbCurrent">앨범 찾기</strong></div>
+          <div class="top-actions">
+            <button class="settings-button" id="settingsButton" type="button" title="재생 장치와 곡간 무음 설정"><span>재생 설정</span><b id="gapBadge">2초</b></button>
+            <span class="premium-note"><span class="tiny-wave">≈</span> PREMIUM PLAYER</span>
+            <button class="connect-button" id="connectButton"><span class="connect-glyph">↗</span> Spotify 연결</button>
+          </div>
+        </header>
+
+        <section class="content-view" id="searchView">
+          <div class="hero-row">
+            <div class="hero-copy">
+              <div class="eyebrow"><span class="eyebrow-line"></span> FIND YOUR NEXT SIDE</div>
+              <h1>오늘 들을<br /><em>앨범을 찾아요.</em></h1>
+              <p>앨범을 골라 이 플레이어에서 바로 재생하세요.</p>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+              <div class="hero-disc"><div class="disc-label"><span>AD</span></div></div>
+              <div class="hero-orbit"></div>
+              <div class="hero-star">✳</div>
+              <div class="hero-caption">NOW<br />SPINNING</div>
+            </div>
+          </div>
+
+          <form class="search-form" id="searchForm">
+            <span class="search-form-icon"></span>
+            <input id="searchInput" type="search" autocomplete="off" placeholder="앨범명 또는 아티스트를 검색하세요" aria-label="앨범 검색" />
+            <kbd>ENTER</kbd>
+          </form>
+
+          <div class="section-heading results-heading">
+            <div><span class="section-kicker">DISCOVER</span><h2 id="resultsTitle">앨범 검색</h2></div>
+            <span class="result-count" id="resultCount"></span>
+          </div>
+          <div class="album-grid" id="albumGrid">
+            <div class="empty-state welcome-state">
+              <div class="empty-symbol">◌</div>
+              <strong>검색으로 시작해 보세요</strong>
+              <span>좋아하는 앨범이나 아티스트를 입력하면<br />Spotify 앨범을 찾아드려요.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-view" id="playlistsView" hidden>
+          <div class="page-intro">
+            <div class="eyebrow"><span class="eyebrow-line"></span> MADE BY YOU</div>
+            <h1>내 플레이<br /><em>리스트.</em></h1>
+            <p>Spotify 플레이리스트를 선택해 이곳에서 재생하세요.</p>
+          </div>
+          <div class="section-heading playlist-heading">
+            <div><span class="section-kicker">YOUR COLLECTION</span><h2>플레이리스트</h2></div>
+            <span class="result-count" id="playlistCount"></span>
+          </div>
+          <div class="playlist-grid" id="playlistGrid">
+            <div class="empty-state"><div class="loader"></div><span>Spotify에 연결해 주세요.</span></div>
+          </div>
+        </section>
+
+        <footer class="content-footer">
+          <span>음악과 앨범 정보는 Spotify에서 제공합니다.</span>
+          <span>PERSONAL LISTENING · <a href="https://www.spotify.com" target="_blank" rel="noreferrer">SPOTIFY ↗</a></span>
+        </footer>
+      </main>
+
+      <aside class="now-playing-panel" aria-label="재생 중인 앨범">
+        <div class="panel-topline"><span>NOW PLAYING</span><span class="equalizer" id="equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+        <div class="now-art-frame" id="nowArtFrame">
+          <div class="art-placeholder"><span>AD</span></div>
+          <img class="now-art" id="nowArt" alt="현재 재생 중인 앨범 표지" hidden />
+          <a class="art-link" id="artLink" href="https://open.spotify.com" target="_blank" rel="noreferrer" title="Spotify에서 열기">↗</a>
+        </div>
+        <div class="track-metadata">
+          <div class="track-kind" id="trackKind">READY WHEN YOU ARE</div>
+          <h2 id="nowTitle">플레이어가<br />기다리고 있어요</h2>
+          <p id="nowArtist">앨범이나 플레이리스트를 선택하세요.</p>
+        </div>
+        <div class="panel-separator"></div>
+        <div class="deck-status-row"><span>PLAYER STATUS</span><span id="playerStatus">연결 대기 중</span></div>
+        <div class="deck-status-row"><span>OUTPUT</span><span id="outputStatus">이 브라우저</span></div>
+        <div class="deck-visual" aria-hidden="true"><div class="deck-visual-top"><span>ALBUM DECK</span><span>STEREO</span></div><div class="deck-slot"><div class="deck-light"></div><div class="deck-slot-line"></div></div><div class="deck-visual-bottom"><span>WEB PLAYBACK</span><span>01</span></div></div>
+      </aside>
+    </div>
+
+    <footer class="player-bar" id="playerBar">
+      <div class="player-track">
+        <div class="mini-art" id="miniArt"><span>AD</span></div>
+        <div class="mini-track-copy"><strong id="miniTitle">아직 재생 중인 곡이 없습니다</strong><span id="miniArtist">앨범 또는 플레이리스트를 선택하세요</span></div>
+        <a class="icon-button mini-spotify-link" id="miniSpotifyLink" title="Spotify에서 열기" aria-label="Spotify에서 열기" target="_blank" rel="noreferrer" hidden>↗</a>
+      </div>
+      <div class="transport">
+        <div class="transport-buttons">
+          <button class="transport-button" id="previousButton" aria-label="이전 곡" title="이전 곡">⏮</button>
+          <button class="play-button" id="playButton" aria-label="재생" title="재생" disabled><span class="play-triangle">▶</span></button>
+          <button class="transport-button" id="nextButton" aria-label="다음 곡" title="다음 곡">⏭</button>
+        </div>
+        <div class="timeline">
+          <span class="time-label" id="elapsedTime">0:00</span>
+          <input type="range" id="seekSlider" min="0" max="1000" value="0" aria-label="재생 위치" disabled />
+          <span class="time-label" id="durationTime">0:00</span>
+        </div>
+      </div>
+      <div class="player-tools">
+        <span class="output-glyph" aria-hidden="true">◖</span><span class="output-label">이 브라우저</span>
+        <span class="volume-glyph" aria-hidden="true">◖</span>
+        <input type="range" id="volumeSlider" min="0" max="100" value="70" aria-label="볼륨" disabled />
+      </div>
+    </footer>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    <dialog class="account-dialog" id="accountDialog">
+      <div class="dialog-mark"><span class="brand-mark"><i></i><i></i><i></i></span></div>
+      <h2 id="dialogTitle">Spotify 연결</h2>
+      <p id="dialogCopy">Premium 계정으로 연결해 이 브라우저에서 재생하세요.</p>
+      <div class="dialog-actions">
+        <button class="quiet-button" id="dialogCancel">닫기</button>
+        <button class="quiet-button" id="dialogDisconnect" hidden>연결 해제</button>
+        <button class="connect-button" id="dialogAction">Spotify 연결</button>
+      </div>
+    </dialog>
+    <dialog class="account-dialog settings-dialog" id="settingsDialog">
+      <div class="settings-heading"><div class="dialog-mark">⋯</div><span>PLAYBACK SETTINGS</span></div>
+      <h2>재생 설정</h2>
+      <p>재생 장치와 한 곡이 끝난 뒤 다음 곡을 시작하기까지의 시간을 설정합니다.</p>
+      <div class="device-setting">
+        <div class="setting-label-row"><label for="deviceSelect">재생 장치</label><button class="text-button" id="refreshDevices" type="button">새로고침</button></div>
+        <select id="deviceSelect"><option value="browser">이 브라우저 · Album Deck</option></select>
+        <div class="local-output-setting" id="localOutputSetting">
+          <span>현재 PC의 출력 인터페이스는 Windows에서 브라우저 출력 장치로 지정합니다.</span>
+          <button class="quiet-button" id="openSoundSettings" type="button">Windows 출력 설정 열기</button>
+        </div>
+      </div>
+      <div class="gap-setting">
+        <label for="gapInput">무음 길이</label>
+        <output id="gapValue" for="gapInput">2초</output>
+        <input id="gapInput" type="range" min="0" max="30" step="0.5" value="2" />
+        <div class="gap-scale"><span>0초</span><span>15초</span><span>30초</span></div>
+      </div>
+      <p class="settings-note">설정한 무음 뒤에 Spotify가 다음 곡을 준비하는 시간이 추가될 수 있습니다.</p>
+      <div class="dialog-actions">
+        <button class="quiet-button" id="settingsCancel">취소</button>
+        <button class="connect-button" id="settingsSave">저장</button>
+      </div>
+    </dialog>
+  </body>
+</html>

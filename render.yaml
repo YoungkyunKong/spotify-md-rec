@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: album-deck
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: SPOTIFY_CLIENT_ID
+        value: 4f876bef5a0b46f2931b4b5e1cae8af1
