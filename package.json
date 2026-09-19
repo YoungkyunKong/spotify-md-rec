@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check web/app.js"
+    "check": "node --check server.mjs && node --check web/app.js && node --check api/config.js && node --check api/healthz.js && node --check scripts/build-vercel.mjs",
+    "build:vercel": "node scripts/build-vercel.mjs"
   }
 }

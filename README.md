@@ -46,6 +46,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 업데이트할 때는 저장소에서 최신 파일을 받거나 새 ZIP을 푼 뒤 `install-windows.cmd`를 다시 실행합니다. 기존 서버를 종료하고 앱 파일과 바로가기를 갱신하며, 같은 브라우저 프로필을 사용하는 한 저장된 설정과 로그인 정보는 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
 
+## Vercel 배포
+
+기존 Windows 설치와 Node.js/Render 실행 방법은 그대로 사용할 수 있습니다. Vercel에서는 웹 파일을 정적으로 제공하고 `/config.js`와 `/healthz`만 Vercel 함수로 처리합니다.
+
+1. Vercel에서 이 GitHub 저장소를 새 프로젝트로 가져옵니다.
+2. 루트 디렉터리는 저장소 최상위로 둡니다. `vercel.json`이 Framework Preset `Other`, 빌드 명령 `npm run build:vercel`, 출력 디렉터리 `public`을 지정합니다.
+3. 배포 후 고정된 프로덕션 주소(예: `https://album-deck.vercel.app`)를 확인합니다.
+4. Spotify Developer Dashboard의 앱에 `https://album-deck.vercel.app/callback`을 Redirect URI로 등록합니다. 실제 배포 주소로 바꾸고 주소를 정확히 일치시켜야 합니다.
+5. 배포된 앱의 **설정**에서 Spotify Client ID와 동일한 Redirect URI를 입력하고 **Spotify 연결**을 누릅니다.
+
+Client ID는 브라우저별로 저장됩니다. 여러 브라우저에 초기값을 제공하려면 Vercel 환경 변수 `SPOTIFY_CLIENT_ID`를 설정할 수 있습니다. 고정된 커스텀 도메인을 사용하는 경우 `PUBLIC_URL`을 해당 HTTPS 주소로 지정해 Redirect URI 초기값을 고정할 수도 있습니다. Client Secret은 사용하지 않습니다.
+
+Vercel의 임시 Preview URL은 배포마다 달라질 수 있으므로 Spotify 로그인 테스트에는 Dashboard에 등록한 고정 프로덕션 도메인을 사용하세요. `/healthz`는 상태 확인용이며, 재생 상태와 곡간 무음 전환은 계속 사용자의 브라우저 탭에서 실행됩니다. 탭을 닫으면 다음 곡으로의 자동 전환도 멈춥니다.
+
 ## Node.js 앱 배포
 
 앱은 별도 빌드 과정이나 Docker 없이 일반 Node.js 웹 서비스로 배포할 수 있습니다. 호스팅 서비스의 런타임은 Node.js 20 이상, 시작 명령은 `npm start`, 상태 확인 주소는 `/healthz`로 지정합니다. 서비스가 주입하는 `PORT`를 자동 사용하며 외부 접속을 위해 `0.0.0.0`에 바인딩합니다.
