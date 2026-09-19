@@ -30,6 +30,8 @@ const dom = {
   nowArt: $("#nowArt"), artLink: $("#artLink"), nowTitle: $("#nowTitle"), nowArtist: $("#nowArtist"),
   trackKind: $("#trackKind"), miniArt: $("#miniArt"), miniTitle: $("#miniTitle"),
   miniArtist: $("#miniArtist"), miniSpotify: $("#miniSpotifyLink"), status: $("#playerStatus"),
+  streamFormat: $("#streamFormat"), streamBitrate: $("#streamBitrate"),
+  streamQualityNote: $("#streamQualityNote"), miniStreamQuality: $("#miniStreamQuality"),
   output: $("#outputStatus"), equalizer: $("#equalizer"), heroDiscs: $$(".hero-disc"), attribution: $("#spotifyAttribution"),
   toast: $("#toastRegion"), settings: $("#settingsDialog"), settingsButton: $("#settingsButton"),
   settingsCancel: $("#settingsCancel"), settingsSave: $("#settingsSave"), gapInput: $("#gapInput"),
@@ -601,10 +603,36 @@ function setPlaybackActivity(playing) {
   dom.heroDiscs.forEach((disc) => disc.classList.toggle("active", active));
 }
 
+function renderStreamQuality(track) {
+  if (!track) {
+    dom.streamFormat.textContent = "—";
+    dom.streamBitrate.textContent = "—";
+    dom.streamQualityNote.hidden = true;
+    dom.miniStreamQuality.hidden = true;
+    return;
+  }
+  if (usesBrowserPlayer() && track.type === "track") {
+    dom.streamFormat.textContent = "AAC (웹 기준)";
+    dom.streamBitrate.textContent = "256 kbps (웹 기준)";
+    dom.streamQualityNote.textContent = "Spotify 웹 플레이어 안내값입니다. 현재 곡의 실제 전송값은 제공되지 않습니다.";
+    dom.miniStreamQuality.textContent = "웹 기준 AAC · 256 kbps (실측 아님)";
+  } else {
+    dom.streamFormat.textContent = "확인 불가";
+    dom.streamBitrate.textContent = "확인 불가";
+    dom.streamQualityNote.textContent = usesBrowserPlayer()
+      ? "이 콘텐츠의 실제 형식과 비트레이트는 제공되지 않습니다."
+      : "Spotify Connect 장치의 실제 형식과 비트레이트는 제공되지 않습니다.";
+    dom.miniStreamQuality.textContent = "형식 · 비트레이트 확인 불가";
+  }
+  dom.streamQualityNote.hidden = false;
+  dom.miniStreamQuality.hidden = false;
+}
+
 function renderState(state) {
   currentState = state;
   if (!usesBrowserPlayer() && state) remoteStateObservedAt = Date.now();
   const track = currentTrack(state);
+  renderStreamQuality(track);
   if (!track) {
     setPlaybackActivity(false);
     dom.playerBar.classList.remove("playing");
@@ -1094,6 +1122,7 @@ dom.settingsSave.addEventListener("click", () => {
     localStorage.setItem(DEVICE_KEY, JSON.stringify(targetDevice));
     if (clientChanged && token) clearSession({ preserveDevice: true });
     currentState = null;
+    renderStreamQuality(null);
     updateGapUi();
     updateOutputLabel();
     dom.settings.close();

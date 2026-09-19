@@ -137,6 +137,9 @@
         <div class="panel-separator"></div>
         <div class="deck-status-row"><span>PLAYER STATUS</span><span id="playerStatus">연결 대기 중</span></div>
         <div class="deck-status-row"><span>OUTPUT</span><span id="outputStatus">이 브라우저</span></div>
+        <div class="deck-status-row"><span>오디오 형식</span><span id="streamFormat">—</span></div>
+        <div class="deck-status-row"><span>비트레이트</span><span id="streamBitrate">—</span></div>
+        <p class="stream-quality-note" id="streamQualityNote" hidden></p>
         <section class="context-queue" aria-labelledby="contextQueueTitle">
           <div class="context-queue-heading">
             <div><span>SELECTED TRACKS</span><strong id="contextQueueTitle">선택한 음악</strong></div>
@@ -152,7 +155,7 @@
     <footer class="player-bar" id="playerBar">
       <div class="player-track">
         <div class="mini-art" id="miniArt"><span>AD</span></div>
-        <div class="mini-track-copy"><strong id="miniTitle">아직 재생 중인 곡이 없습니다</strong><span id="miniArtist">앨범 또는 플레이리스트를 선택하세요</span></div>
+        <div class="mini-track-copy"><strong id="miniTitle">아직 재생 중인 곡이 없습니다</strong><span id="miniArtist">앨범 또는 플레이리스트를 선택하세요</span><span class="mini-stream-quality" id="miniStreamQuality" hidden></span></div>
         <a class="icon-button mini-spotify-link" id="miniSpotifyLink" title="Spotify에서 열기" aria-label="Spotify에서 열기" target="_blank" rel="noreferrer" hidden>↗</a>
       </div>
       <div class="transport">
