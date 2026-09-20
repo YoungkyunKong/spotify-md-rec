@@ -46,6 +46,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 업데이트할 때는 저장소에서 최신 파일을 받거나 새 ZIP을 푼 뒤 `install-windows.cmd`를 다시 실행합니다. 기존 서버를 종료하고 앱 파일과 바로가기를 갱신하며, 같은 브라우저 프로필을 사용하는 한 저장된 설정과 로그인 정보는 유지됩니다. 시작 메뉴의 **Album Deck Stop**으로 백그라운드 서버를 종료할 수 있습니다.
 
+### Windows 배포 ZIP 만들기
+
+Node.js가 설치된 개발 환경에서 다음 명령을 실행하면 `dist\album-deck-windows-v<현재 버전>.zip`을 만듭니다. 버전은 `package.json`에서 가져옵니다.
+
+```powershell
+npm run build:windows-zip
+```
+
+ZIP을 사용자에게 전달한 뒤 압축을 풀고 `install-windows.cmd`를 실행하면 됩니다. ZIP에는 앱 실행에 필요한 파일과 Node.js 자동 설치 기능이 있는 설치 스크립트가 포함되며, `node_modules`, `.git`, 개발용 빌드 캐시는 포함하지 않습니다.
+
 ## Vercel 배포
 
 기존 Windows 설치와 Node.js/Render 실행 방법은 그대로 사용할 수 있습니다. Vercel에서는 웹 파일을 정적으로 제공하고 `/config.js`와 `/healthz`만 Vercel 함수로 처리합니다.
