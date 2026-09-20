@@ -22,6 +22,23 @@ npm start
 
 브라우저에서 [http://127.0.0.1:8888](http://127.0.0.1:8888)을 열고 **설정**에 Client ID와 `http://127.0.0.1:8888/callback`을 입력합니다. Spotify 연결을 누르면 PKCE 로그인 후 앱으로 돌아옵니다. 로그인 화면은 매번 승인 대화상자를 표시하므로 현재 계정이 다르면 Spotify 화면의 **Not you?** 링크로 다른 계정을 선택할 수 있습니다. 연결된 뒤에는 우측 상단 **Spotify 연결됨**에서 **다른 계정으로 연결** 또는 **연결 해제**를 선택합니다. `Ctrl+C`로 정적 파일 서버를 종료합니다.
 
+## npm으로 설치
+
+Node.js 20 이상이 설치되어 있으면 npm에서 전역으로 설치해 실행할 수 있습니다.
+
+```powershell
+npm install --global album-deck
+album-deck
+```
+
+설치하지 않고 일회성으로 실행하려면 다음을 사용합니다.
+
+```powershell
+npx album-deck
+```
+
+명령을 실행하면 로컬 Album Deck 서버가 시작되고 브라우저가 열립니다. 처음 실행한 뒤 설정에서 Spotify Client ID와 Redirect URI를 입력하세요. Windows 바로가기, Node.js 자동 설치, Edge·Chrome 선택 기능이 필요한 경우에는 GitHub Releases의 Windows 배포 ZIP을 사용하세요.
+
 ## Windows 설치 및 업데이트
 
 현재 GitHub Releases의 EXE 설치 프로그램은 사용하지 않습니다. 저장소 소스를 받아 포함된 설치 스크립트로 설치합니다.

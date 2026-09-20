@@ -1,15 +1,40 @@
 {
   "name": "album-deck",
   "version": "1.0.1",
-  "private": true,
+  "description": "Personal Spotify album and playlist player with configurable gaps for MiniDisc recording",
+  "private": false,
   "type": "module",
+  "bin": {
+    "album-deck": "bin/album-deck.mjs"
+  },
+  "files": [
+    "api",
+    "assets",
+    "bin",
+    "distribution",
+    "scripts",
+    "web",
+    "windows",
+    "install-windows.cmd",
+    "install-windows.ps1",
+    "package.json",
+    "server.mjs",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YoungkyunKong/spotify-md-rec.git"
+  },
+  "homepage": "https://github.com/YoungkyunKong/spotify-md-rec",
+  "keywords": ["spotify", "music-player", "minidisc", "web-playback"],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check web/app.js && node --check api/config.js && node --check api/healthz.js && node --check scripts/build-vercel.mjs && node --check scripts/build-windows-zip.mjs",
+    "check": "node --check server.mjs && node --check web/app.js && node --check api/config.js && node --check api/healthz.js && node --check bin/album-deck.mjs && node --check scripts/build-vercel.mjs && node --check scripts/build-windows-zip.mjs",
     "build:vercel": "node scripts/build-vercel.mjs",
-    "build:windows-zip": "node scripts/build-windows-zip.mjs"
+    "build:windows-zip": "node scripts/build-windows-zip.mjs",
+    "pack:npm": "npm pack"
   }
 }
