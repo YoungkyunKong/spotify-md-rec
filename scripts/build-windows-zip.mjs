@@ -23,12 +23,13 @@ const files = [
   "package.json",
   "package-lock.json",
   "server.mjs",
-  "README.md",
+  "distribution/README.md",
 ];
 
 try {
   for (const name of files) {
-    await cp(resolve(root, name), resolve(stage, name), { recursive: true });
+    const destination = name === "distribution/README.md" ? "README.md" : name;
+    await cp(resolve(root, name), resolve(stage, destination), { recursive: true });
   }
 
   const powershell = "$ErrorActionPreference = 'Stop'; Compress-Archive -Path (Join-Path $env:ALBUM_DECK_STAGE '*') -DestinationPath $env:ALBUM_DECK_ARCHIVE -CompressionLevel Optimal";
