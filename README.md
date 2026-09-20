@@ -40,7 +40,7 @@ Git을 사용하지 않는 경우 GitHub의 **Code → Download ZIP**으로 소�
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install-windows.ps1
 ```
 
-설치 스크립트는 Node.js 20 이상을 확인하고 `%LOCALAPPDATA%\Programs\AlbumDeck`에 앱을 복사한 뒤 MiniDisc 아이콘이 적용된 **Album Deck** 바로가기를 바탕 화면과 시작 메뉴에 등록합니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않습니다.
+설치 스크립트는 Node.js 20 이상을 확인합니다. Node.js가 없거나 버전이 낮으면 Windows `winget`으로 Node.js LTS를 자동 설치한 뒤 `%LOCALAPPDATA%\Programs\AlbumDeck`에 앱을 복사합니다. `winget`을 사용할 수 없는 환경에서는 Windows App Installer를 먼저 설치해야 합니다. 이후 MiniDisc 아이콘이 적용된 **Album Deck** 바로가기를 바탕 화면과 시작 메뉴에 등록합니다. 바로가기는 Edge의 독립 앱 창으로 열리며, Edge가 없으면 Chrome을 사용합니다. 주소창이나 브라우저 탭은 표시되지 않습니다.
 
 설치 후 **Album Deck** 바로가기를 실행하고 상단 **설정**에 Spotify Client ID와 `http://127.0.0.1:8888/callback`을 입력한 다음 **Spotify 연결**을 누릅니다. Client ID, 로그인 토큰, 재생 장치와 무음 길이는 브라우저에 저장되어 앱과 PC를 다시 시작해도 유지됩니다.
 

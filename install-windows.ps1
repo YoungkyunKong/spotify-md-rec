@@ -5,13 +5,47 @@ $installRoot = Join-Path $env:LOCALAPPDATA "Programs\AlbumDeck"
 $startMenu = Join-Path ([Environment]::GetFolderPath("StartMenu")) "Programs"
 $desktop = [Environment]::GetFolderPath("Desktop")
 
-$nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
-if (-not $nodeCommand) {
-  throw "Node.js 20 이상이 필요합니다. Node.js를 설치한 뒤 다시 실행해 주세요."
+function Find-NodeExecutable {
+  $command = Get-Command node.exe -ErrorAction SilentlyContinue
+  if ($command) { return $command.Source }
+
+  $candidates = @(
+    (Join-Path $env:ProgramFiles "nodejs\node.exe"),
+    (Join-Path $env:LOCALAPPDATA "Programs\nodejs\node.exe")
+  )
+  return ($candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1)
 }
-$nodeMajor = [int]((& $nodeCommand.Source --version).TrimStart("v").Split(".")[0])
+
+$nodePath = Find-NodeExecutable
+$nodeMajor = 0
+if ($nodePath) {
+  $nodeMajor = [int]((& $nodePath --version).TrimStart("v").Split(".")[0])
+}
+
+if (-not $nodePath -or $nodeMajor -lt 20) {
+  $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+  if (-not $winget) {
+    if ($nodePath) {
+      throw "현재 Node.js 버전이 $(& $nodePath --version)입니다. Node.js 20 이상 설치에 필요한 winget을 찾지 못했습니다. Windows App Installer를 설치한 뒤 다시 실행해 주세요."
+    }
+    throw "Node.js 20 이상이 필요합니다. 자동 설치에 필요한 winget을 찾지 못했습니다. Windows App Installer를 설치한 뒤 다시 실행해 주세요."
+  }
+
+  Write-Host "Node.js 20 이상이 없어 Node.js LTS를 설치합니다. Windows 권한 확인 창이 나타날 수 있습니다." -ForegroundColor Yellow
+  & $winget.Source install --id OpenJS.NodeJS.LTS --exact --source winget --accept-source-agreements --accept-package-agreements --silent
+  if ($LASTEXITCODE -ne 0) {
+    throw "Node.js LTS 자동 설치에 실패했습니다. winget 오류 코드: $LASTEXITCODE"
+  }
+
+  $env:Path = "$env:ProgramFiles\nodejs;$env:LOCALAPPDATA\Programs\nodejs;$env:Path"
+  $nodePath = Find-NodeExecutable
+  if (-not $nodePath) {
+    throw "Node.js 설치는 완료되었지만 현재 PowerShell에서 node.exe를 찾지 못했습니다. 터미널을 새로 열고 다시 실행해 주세요."
+  }
+  $nodeMajor = [int]((& $nodePath --version).TrimStart("v").Split(".")[0])
+}
 if ($nodeMajor -lt 20) {
-  throw "Node.js 20 이상이 필요합니다. 현재 버전: $(& $nodeCommand.Source --version)"
+  throw "Node.js 20 이상이 필요합니다. 현재 버전: $(& $nodePath --version)"
 }
 
 $oldStop = Join-Path $installRoot "windows\stop.ps1"
