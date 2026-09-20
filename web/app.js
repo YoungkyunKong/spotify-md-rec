@@ -3,6 +3,7 @@ const TOKEN_KEY = "albumdeck.spotify.session.v1";
 const SPOTIFY_CONFIG_KEY = "albumdeck.spotify.config.v1";
 const GAP_KEY = "albumdeck.playback.gap-seconds.v1";
 const DEVICE_KEY = "albumdeck.playback.device.v1";
+const BROWSER_KEY = "albumdeck.browser.preference.v1";
 const DEFAULT_REDIRECT_URI = `${location.origin}/callback`;
 const SCOPES = [
   "streaming",
@@ -37,6 +38,7 @@ const dom = {
   settingsCancel: $("#settingsCancel"), settingsSave: $("#settingsSave"), gapInput: $("#gapInput"),
   gapValue: $("#gapValue"), gapBadge: $("#gapBadge"),
   clientIdInput: $("#clientIdInput"), redirectUriInput: $("#redirectUriInput"),
+  browserSelect: $("#browserSelect"),
   deviceSelect: $("#deviceSelect"), refreshDevices: $("#refreshDevices"),
   localOutput: $("#localOutputSetting"), openSoundSettings: $("#openSoundSettings"),
   queueTitle: $("#contextQueueTitle"), queueCount: $("#contextQueueCount"), queueList: $("#contextTrackList"),
@@ -66,6 +68,7 @@ let playbackErrorTimer = null;
 let queueInGap = false;
 let gapSeconds = readGapSeconds();
 let targetDevice = readTargetDevice();
+let browserPreference = readBrowserPreference();
 let availableDevices = [];
 let volumeTimer = null;
 let spotifyBackoffUntil = 0;
@@ -453,6 +456,29 @@ function spotifyError(response, data) {
       : `Spotify 요청 한도에 도달했습니다. ${waitSeconds}초 후 다시 시도해 주세요. (${detail})`);
   }
   return new Error(`Spotify API 오류 (${response.status}): ${detail}`);
+}
+
+function readBrowserPreference() {
+  try {
+    const value = localStorage.getItem(BROWSER_KEY);
+    return ["auto", "edge", "chrome"].includes(value) ? value : "auto";
+  } catch { return "auto"; }
+}
+
+async function refreshBrowserOptions() {
+  let config = null;
+  try {
+    const response = await fetch("/browser-config", { cache: "no-store" });
+    if (response.ok) config = await response.json();
+  } catch { /* Vercel and other static hosts use the browser-local fallback. */ }
+  const available = Array.isArray(config?.available) && config.available.length
+    ? config.available
+    : ["edge", "chrome"];
+  const labels = { auto: "자동 선택", edge: "Microsoft Edge", chrome: "Google Chrome", system: "시스템 기본 브라우저" };
+  const values = ["auto", ...available.filter((value) => ["edge", "chrome"].includes(value))];
+  const selected = values.includes(config?.selected) ? config.selected : (values.includes(browserPreference) ? browserPreference : "auto");
+  browserPreference = selected;
+  dom.browserSelect.replaceChildren(...values.map((value) => new Option(labels[value], value, false, value === selected)));
 }
 
 async function loadProfile() {
@@ -1069,6 +1095,7 @@ async function openSettingsDialog() {
   updateGapUi();
   updateSpotifySettingsUi();
   dom.settings.showModal();
+  await refreshBrowserOptions();
   await refreshDeviceOptions();
 }
 
@@ -1116,10 +1143,17 @@ dom.settingsSave.addEventListener("click", () => {
     const value = Math.min(30, Math.max(0, Math.round(Number(dom.gapInput.value) * 2) / 2));
     gapSeconds = Number.isFinite(value) ? value : 2;
     targetDevice = selectedDeviceFromSettings();
+    browserPreference = dom.browserSelect.value;
     spotifyConfig = nextSpotifyConfig;
     localStorage.setItem(SPOTIFY_CONFIG_KEY, JSON.stringify(spotifyConfig));
     localStorage.setItem(GAP_KEY, String(gapSeconds));
     localStorage.setItem(DEVICE_KEY, JSON.stringify(targetDevice));
+    localStorage.setItem(BROWSER_KEY, browserPreference);
+    fetch("/browser-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preference: browserPreference }),
+    }).catch(() => {});
     if (clientChanged && token) clearSession({ preserveDevice: true });
     currentState = null;
     renderStreamQuality(null);

@@ -36,15 +36,32 @@ if (-not (Test-AlbumDeck)) {
   }
 }
 
-$browserCandidates = @(
-  (Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"),
-  (Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"),
-  (Join-Path $env:LOCALAPPDATA "Microsoft\Edge\Application\msedge.exe"),
-  (Join-Path $env:ProgramFiles "Google\Chrome\Application\chrome.exe"),
-  (Join-Path ${env:ProgramFiles(x86)} "Google\Chrome\Application\chrome.exe"),
-  (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe")
-)
-$browser = $browserCandidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+$browserPaths = @{
+  edge = @(
+    (Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"),
+    (Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"),
+    (Join-Path $env:LOCALAPPDATA "Microsoft\Edge\Application\msedge.exe")
+  )
+  chrome = @(
+    (Join-Path $env:ProgramFiles "Google\Chrome\Application\chrome.exe"),
+    (Join-Path ${env:ProgramFiles(x86)} "Google\Chrome\Application\chrome.exe"),
+    (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe")
+  )
+}
+$preference = "auto"
+$browserConfig = Join-Path $env:LOCALAPPDATA "AlbumDeck\browser.json"
+if (Test-Path -LiteralPath $browserConfig) {
+  try {
+    $savedPreference = (Get-Content -LiteralPath $browserConfig -Raw | ConvertFrom-Json).preference
+    if ($savedPreference -in @("auto", "edge", "chrome")) { $preference = $savedPreference }
+  } catch { $preference = "auto" }
+}
+$browserOrder = if ($preference -eq "chrome") { @("chrome", "edge") } else { @("edge", "chrome") }
+$browser = $null
+foreach ($browserId in $browserOrder) {
+  $browser = $browserPaths[$browserId] | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+  if ($browser) { break }
+}
 
 if ($browser) {
   Start-Process -FilePath $browser -ArgumentList "--app=$appUrl"

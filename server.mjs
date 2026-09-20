@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +12,21 @@ if (publicUrl && publicUrl.protocol !== "https:" && publicUrl.hostname !== "127.
   throw new Error("PUBLIC_URL must use HTTPS except for a loopback address.");
 }
 const redirectUri = publicUrl ? new URL("/callback", publicUrl).href : null;
+const browserConfigPath = process.env.LOCALAPPDATA
+  ? resolve(process.env.LOCALAPPDATA, "AlbumDeck", "browser.json")
+  : null;
+const browserExecutables = {
+  edge: [
+    resolve(process.env.ProgramFiles || "", "Microsoft\\Edge\\Application\\msedge.exe"),
+    resolve(process.env["ProgramFiles(x86)"] || "", "Microsoft\\Edge\\Application\\msedge.exe"),
+    resolve(process.env.LOCALAPPDATA || "", "Microsoft\\Edge\\Application\\msedge.exe"),
+  ],
+  chrome: [
+    resolve(process.env.ProgramFiles || "", "Google\\Chrome\\Application\\chrome.exe"),
+    resolve(process.env["ProgramFiles(x86)"] || "", "Google\\Chrome\\Application\\chrome.exe"),
+    resolve(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
+  ],
+};
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -22,16 +37,37 @@ const mime = {
 };
 
 const server = createServer(async (request, response) => {
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    response.writeHead(405, { Allow: "GET, HEAD" }).end();
-    return;
-  }
-
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host}`).pathname);
   } catch {
     response.writeHead(400).end("Bad request");
+    return;
+  }
+
+  if (!["GET", "HEAD", "POST"].includes(request.method) || (request.method === "POST" && pathname !== "/browser-config")) {
+    response.writeHead(405, { Allow: pathname === "/browser-config" ? "GET, HEAD, POST" : "GET, HEAD" }).end();
+    return;
+  }
+
+  if (pathname === "/browser-config") {
+    if (request.method === "POST") {
+      try {
+        const body = await readRequestBody(request);
+        const payload = JSON.parse(body || "{}");
+        if (!["auto", "edge", "chrome"].includes(payload.preference)) throw new Error("Invalid browser preference");
+        if (!browserConfigPath) throw new Error("Browser settings are only available locally.");
+        await mkdir(resolve(browserConfigPath, ".."), { recursive: true });
+        await writeFile(browserConfigPath, JSON.stringify({ preference: payload.preference }, null, 2), "utf8");
+      } catch (error) {
+        response.writeHead(400, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }).end(JSON.stringify({ error: error.message }));
+        return;
+      }
+    }
+    const config = await browserConfig();
+    const content = Buffer.from(JSON.stringify(config));
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Content-Length": content.length, "Cache-Control": "no-store" });
+    response.end(request.method === "HEAD" ? undefined : content);
     return;
   }
 
@@ -84,6 +120,39 @@ server.listen(port, host, () => {
 
 function shutdown() {
   server.close(() => process.exit(0));
+}
+
+async function browserConfig() {
+  let preference = "auto";
+  if (browserConfigPath) {
+    try {
+      const saved = JSON.parse(await readFile(browserConfigPath, "utf8"));
+      if (["auto", "edge", "chrome"].includes(saved.preference)) preference = saved.preference;
+    } catch { /* Use automatic selection when no local preference exists. */ }
+  }
+  const available = [];
+  for (const [id, paths] of Object.entries(browserExecutables)) {
+    for (const path of paths) {
+      try { await access(path); available.push(id); break; } catch { /* Try the next installation path. */ }
+    }
+  }
+  const selected = preference !== "auto" && available.includes(preference)
+    ? preference
+    : available[0] || "system";
+  return { preference, available, selected };
+}
+
+function readRequestBody(request) {
+  return new Promise((resolveBody, reject) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 4096) reject(new Error("Request body is too large"));
+    });
+    request.on("end", () => resolveBody(body));
+    request.on("error", reject);
+  });
 }
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);

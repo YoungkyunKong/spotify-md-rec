@@ -152,6 +152,7 @@ h1 em { color: var(--mint); font-style: normal; }
 .track-metadata { margin-top: 21px; }.track-kind { font: 9px var(--mono); letter-spacing: 1px; color: var(--mint); }
 .track-metadata h2 { margin: 7px 0 5px; font: 600 20px/1.3 var(--display); letter-spacing: -.6px; }
 .track-metadata p { margin: 0; color: #89938b; font-size: 11px; }
+.browser-setting { margin-top: 18px; }
 .panel-separator { height: 1px; background: var(--line); margin: 21px 0 13px; }
 .deck-status-row { display: flex; justify-content: space-between; gap: 8px; margin: 7px 0; color: #818b83; font: 11px var(--mono); letter-spacing: .35px; }.deck-status-row span:last-child { color: #b2bbb4; text-align: right; }
 .stream-quality-note { margin: 5px 0 0; color: #78837a; font-size: 10px; line-height: 1.45; }
