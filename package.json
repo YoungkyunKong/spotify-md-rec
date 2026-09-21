@@ -23,7 +23,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/YoungkyunKong/spotify-md-rec.git"
+    "url": "git+https://github.com/YoungkyunKong/spotify-md-rec.git"
   },
   "homepage": "https://github.com/YoungkyunKong/spotify-md-rec",
   "keywords": ["spotify", "music-player", "minidisc", "web-playback"],
