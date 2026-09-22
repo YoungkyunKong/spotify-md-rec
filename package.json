@@ -17,6 +17,8 @@
     "windows",
     "install-windows.cmd",
     "install-windows.ps1",
+    "README.en.md",
+    "docs/images",
     "package.json",
     "server.mjs",
     "README.md"
@@ -37,7 +39,7 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check web/app.js && node --check api/config.js && node --check api/healthz.js && node --check bin/album-deck.mjs && node --check scripts/build-vercel.mjs && node --check scripts/build-windows-zip.mjs",
+    "check": "node --check server.mjs && node --check web/app.js && node --check api/config.js && node --check api/healthz.js && node --check bin/album-deck.mjs && node --check scripts/build-vercel.mjs && node --check scripts/build-windows-zip.mjs && node --check scripts/render-user-guide.mjs",
     "build:vercel": "node scripts/build-vercel.mjs",
     "build:windows-zip": "node scripts/build-windows-zip.mjs",
     "pack:npm": "npm pack"
