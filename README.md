@@ -51,7 +51,7 @@ cd spotify-md-rec
 .\install-windows.cmd
 ```
 
-바로 설치하려면 [최신 Windows 배포 ZIP 다운로드](https://github.com/YoungkyunKong/spotify-md-rec/releases/latest/download/album-deck-windows-v1.0.1.zip)를 사용하세요. ZIP을 내려받아 압축을 푼 뒤 `install-windows.cmd`를 실행하면 됩니다.
+바로 설치하려면 [최신 Windows 배포 ZIP 다운로드](https://github.com/YoungkyunKong/spotify-md-rec/releases/latest/download/album-deck-windows-v1.1.0.zip)를 사용하세요. ZIP을 내려받아 압축을 푼 뒤 `install-windows.cmd`를 실행하면 됩니다.
 
 Git을 사용하지 않는 경우 GitHub의 **Code → Download ZIP**으로 소스를 내려받아 압축을 푼 다음 `install-windows.cmd`를 더블 클릭합니다. PowerShell에서 직접 실행하려면 다음 명령을 사용합니다.
 

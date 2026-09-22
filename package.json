@@ -1,6 +1,6 @@
 {
   "name": "album-deck",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Personal Spotify album and playlist player with configurable gaps for MiniDisc recording",
   "private": false,
   "type": "module",
@@ -26,7 +26,12 @@
     "url": "git+https://github.com/YoungkyunKong/spotify-md-rec.git"
   },
   "homepage": "https://github.com/YoungkyunKong/spotify-md-rec",
-  "keywords": ["spotify", "music-player", "minidisc", "web-playback"],
+  "keywords": [
+    "spotify",
+    "music-player",
+    "minidisc",
+    "web-playback"
+  ],
   "engines": {
     "node": ">=20"
   },

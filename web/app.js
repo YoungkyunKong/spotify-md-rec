@@ -42,6 +42,9 @@ const dom = {
   deviceSelect: $("#deviceSelect"), refreshDevices: $("#refreshDevices"),
   localOutput: $("#localOutputSetting"), openSoundSettings: $("#openSoundSettings"),
   queueTitle: $("#contextQueueTitle"), queueCount: $("#contextQueueCount"), queueList: $("#contextTrackList"),
+  tagEditor: $("#tagEditorButton"), tagDialog: $("#tagDialog"), chooseTagFiles: $("#chooseTagFiles"),
+  tagFileInput: $("#tagFileInput"), tagFileSummary: $("#tagFileSummary"), tagProgress: $("#tagProgress"),
+  tagCancel: $("#tagCancel"), applyTags: $("#applyTags"),
 };
 
 let token = readSession();
@@ -57,6 +60,10 @@ let sdkPromise = null;
 let currentArtwork = "";
 let playbackQueue = [];
 let queueTracks = [];
+let tagTracks = [];
+let queueContextLabel = "선택한 음악";
+let tagFileHandles = [];
+let tagFiles = [];
 let queueIndex = -1;
 let queueTrackStarted = false;
 let queueMaxPosition = 0;
@@ -229,6 +236,9 @@ function clearSession({ preserveDevice = false } = {}) {
   currentState = null;
   playbackQueue = [];
   queueTracks = [];
+  tagTracks = [];
+  queueContextLabel = "선택한 음악";
+  dom.tagEditor.disabled = true;
   queueIndex = -1;
   if (queueAdvanceTimer) window.clearTimeout(queueAdvanceTimer);
   if (queueEndTimer) window.clearTimeout(queueEndTimer);
@@ -592,6 +602,28 @@ async function pausePlayback() {
   return spotifyApi(`/me/player/pause?device_id=${encodeURIComponent(targetDeviceId())}`, { method: "PUT" });
 }
 
+async function stopPlaybackAtEnd() {
+  let failure = null;
+  let paused = false;
+  for (let attempt = 0; attempt < 3 && !paused; attempt++) {
+    try { await pausePlayback(); } catch (error) { failure = error; }
+    await new Promise((resolve) => window.setTimeout(resolve, 180));
+    try {
+      const state = await playbackState();
+      paused = !state || state.paused;
+    } catch (error) { failure ||= error; }
+  }
+  if (paused) failure = null;
+  if (!paused && !failure) failure = new Error("광출력 정지 상태를 확인하지 못했습니다.");
+  try { await seekPlayback(0); } catch (error) { failure ||= error; }
+  if (failure) throw failure;
+  if (currentState) {
+    currentState = { ...currentState, paused: true, position: 0 };
+    renderState(currentState);
+  }
+  dom.status.textContent = "재생 종료 · 광출력 정지";
+}
+
 async function togglePlayback() {
   if (usesBrowserPlayer()) return player?.togglePlay();
   const state = await playbackState();
@@ -715,10 +747,13 @@ async function playContext(uri, label = "재생") {
   if (!token) { openAccountDialog(); return; }
   if (usesBrowserPlayer() && (!deviceId || !player)) { showToast("내장 플레이어가 아직 준비되지 않았습니다.", "warning"); return; }
   try {
-    const tracks = await playableTracks(uri);
+    const allTracks = await contextTracks(uri);
+    const tracks = allTracks.filter((track) => track.playable);
     if (!tracks.length) throw new Error("재생 가능한 곡을 찾지 못했습니다.");
     if (usesBrowserPlayer()) await player.activateElement();
     queueTracks = tracks;
+    tagTracks = allTracks;
+    queueContextLabel = label;
     playbackQueue = tracks.map((track) => track.uri);
     queueIndex = 0;
     renderContextQueue(label);
@@ -846,8 +881,14 @@ async function verifyQueueEnd(generation, expectedUri) {
 function beginQueueAdvance(state) {
   if (queueAdvanceTimer) return;
   if (queueIndex >= playbackQueue.length - 1) {
+    queueTrackStarted = false;
+    queueInGap = false;
+    if (queueEndTimer) window.clearTimeout(queueEndTimer);
+    queueEndTimer = null;
+    queueEndDeadline = 0;
     setPlaybackActivity(false);
     dom.playerBar.classList.remove("playing");
+    stopPlaybackAtEnd().catch(() => { dom.status.textContent = "재생 종료 · 광출력 정지 실패"; });
     return;
   }
   const generation = queueGeneration;
@@ -888,8 +929,10 @@ async function playPrevious() {
 }
 
 function renderContextQueue(label = "선택한 음악") {
+  queueContextLabel = label;
   dom.queueTitle.textContent = label;
   dom.queueCount.textContent = `${queueTracks.length}곡`;
+  dom.tagEditor.disabled = !(tagTracks.length || queueTracks.length);
   dom.queueList.replaceChildren();
   if (!queueTracks.length) {
     dom.queueList.append(make("div", "context-queue-empty", "앨범이나 플레이리스트를 선택하면\n곡 목록이 표시됩니다."));
@@ -921,7 +964,7 @@ function updateQueueHighlight(scroll = true) {
   if (scroll) active?.scrollIntoView({ block: "nearest" });
 }
 
-async function playableTracks(contextUri) {
+async function contextTracks(contextUri) {
   const match = /^spotify:(album|playlist):([A-Za-z0-9]+)$/.exec(contextUri || "");
   if (!match) throw new Error("지원하지 않는 Spotify 재생 주소입니다.");
   const [, type, id] = match;
@@ -930,12 +973,15 @@ async function playableTracks(contextUri) {
     : await pages(`/playlists/${id}/items?limit=50&additional_types=track`, "items");
   return rows
     .map((row) => row?.item || row?.track || row)
-    .filter((track) => track?.type === "track" && !track.is_local && track.is_playable !== false && track.uri)
+    .filter((track) => track?.type === "track" && track.uri)
     .map((track) => ({
       uri: track.uri,
       name: track.name || "제목 없음",
       artist: (track.artists || []).map((artist) => artist.name).filter(Boolean).join(", "),
       duration_ms: track.duration_ms || 0,
+      album: track.album?.name || "",
+      release_date: track.album?.release_date || "",
+      playable: !track.is_local && track.is_playable !== false,
     }));
 }
 
@@ -1203,6 +1249,15 @@ dom.volume.addEventListener("input", () => {
   if (volumeTimer) window.clearTimeout(volumeTimer);
   volumeTimer = window.setTimeout(() => setPlaybackVolume(Number(dom.volume.value)).catch((error) => showToast(error.message, "error")), usesBrowserPlayer() ? 0 : 220);
 });
+dom.tagEditor.addEventListener("click", () => openTagDialog());
+dom.tagCancel.addEventListener("click", () => dom.tagDialog.close());
+dom.chooseTagFiles.addEventListener("click", () => chooseTagFiles().catch((error) => showToast(error.message, "error", 7000)));
+dom.tagFileInput.addEventListener("change", () => {
+  tagFileHandles = [];
+  tagFiles = [...(dom.tagFileInput.files || [])];
+  updateTagFileSummary();
+});
+dom.applyTags.addEventListener("click", () => applyId3Tags().catch((error) => showToast(error.message, "error", 7000)));
 dom.attribution.addEventListener("click", () => { if (currentState?.track_window?.current_track?.uri) window.open(`https://open.spotify.com/track/${currentState.track_window.current_track.uri.split(":").at(-1)}`, "_blank", "noopener,noreferrer"); });
 window.addEventListener("keydown", (event) => {
   if (event.altKey || event.ctrlKey || event.metaKey || event.target.matches("input, textarea, button")) return;
@@ -1221,6 +1276,189 @@ async function boot() {
     showToast(error.message, "error", 7000);
     if (/401|인증이 만료|invalid_grant/i.test(error.message)) clearSession();
   }
+}
+
+function openTagDialog() {
+  if (!(tagTracks.length || queueTracks.length)) {
+    showToast("먼저 앨범 또는 플레이리스트를 선택하세요.", "warning");
+    return;
+  }
+  tagFileHandles = [];
+  tagFiles = [];
+  dom.tagFileInput.value = "";
+  dom.tagProgress.hidden = true;
+  dom.tagProgress.textContent = "";
+  updateTagFileSummary();
+  dom.tagDialog.showModal();
+}
+
+async function chooseTagFiles() {
+  if (typeof window.showDirectoryPicker === "function") {
+    const directory = await window.showDirectoryPicker({ mode: "readwrite", id: "album-deck-tag-folder" });
+    const pairs = [];
+    for await (const [name, handle] of directory.entries()) {
+      if (handle.kind === "file" && name.toLowerCase().endsWith(".mp3")) pairs.push({ handle, file: await handle.getFile() });
+    }
+    pairs.sort((a, b) => a.file.name.localeCompare(b.file.name, undefined, { numeric: true, sensitivity: "base" }));
+    tagFileHandles = pairs.map((pair) => pair.handle);
+    tagFiles = pairs.map((pair) => pair.file);
+  } else if (typeof window.showOpenFilePicker === "function") {
+    const handles = await window.showOpenFilePicker({ multiple: true, excludeAcceptAllOption: true, types: [{ description: "MP3 audio", accept: { "audio/mpeg": [".mp3"] } }] });
+    const pairs = await Promise.all(handles.map(async (handle) => ({ handle, file: await handle.getFile() })));
+    pairs.sort((a, b) => a.file.name.localeCompare(b.file.name, undefined, { numeric: true, sensitivity: "base" }));
+    tagFileHandles = pairs.map((pair) => pair.handle);
+    tagFiles = pairs.map((pair) => pair.file);
+  } else {
+    dom.tagFileInput.click();
+    return;
+  }
+  updateTagFileSummary();
+}
+
+function updateTagFileSummary() {
+  const count = tagFiles.length;
+  dom.tagFileSummary.textContent = count ? `${count}개 파일 선택됨 · 파일명 순서로 매칭` : "선택된 파일 없음";
+  dom.applyTags.disabled = !count || !(tagTracks.length || queueTracks.length);
+}
+
+function sortTagFiles(files) {
+  return [...files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+}
+
+async function audioFileDuration(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const audio = new Audio();
+    audio.preload = "metadata";
+    const duration = await new Promise((resolveDuration, reject) => {
+      const timeout = window.setTimeout(() => reject(new Error(`${file.name}: 재생 시간 판독 시간 초과`)), 10000);
+      const finish = () => {
+        window.clearTimeout(timeout);
+        const value = Number(audio.duration);
+        URL.revokeObjectURL(url);
+        if (Number.isFinite(value) && value > 0) resolveDuration(value * 1000);
+        else reject(new Error(`${file.name}: 재생 시간을 읽을 수 없습니다.`));
+      };
+      audio.addEventListener("loadedmetadata", finish, { once: true });
+      audio.addEventListener("error", () => { window.clearTimeout(timeout); reject(new Error(`${file.name}: MP3 파일을 읽을 수 없습니다.`)); }, { once: true });
+      audio.src = url;
+      audio.load();
+    });
+    return duration;
+  } catch (error) {
+    URL.revokeObjectURL(url);
+    throw error;
+  }
+}
+
+function utf16Frame(frameId, value) {
+  const text = String(value || "");
+  const utf16 = new Uint8Array(2 + text.length * 2 + 2);
+  utf16[0] = 0xff; utf16[1] = 0xfe;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    utf16[2 + i * 2] = code & 0xff;
+    utf16[3 + i * 2] = code >> 8;
+  }
+  const payload = new Uint8Array(1 + utf16.length);
+  payload[0] = 1;
+  payload.set(utf16, 1);
+  const frame = new Uint8Array(10 + payload.length);
+  frame.set([...frameId].map((char) => char.charCodeAt(0)), 0);
+  new DataView(frame.buffer).setUint32(4, payload.length);
+  frame.set(payload, 10);
+  return frame;
+}
+
+function syncSafe(value) {
+  return new Uint8Array([(value >> 21) & 0x7f, (value >> 14) & 0x7f, (value >> 7) & 0x7f, value & 0x7f]);
+}
+
+function id3TagFor(track, index, total) {
+  const frames = [
+    utf16Frame("TIT2", track.name),
+    utf16Frame("TPE1", track.artist),
+    utf16Frame("TALB", track.album || queueContextLabel),
+    utf16Frame("TRCK", `${index + 1}/${total}`),
+  ];
+  if (track.release_date) frames.push(utf16Frame("TYER", track.release_date.slice(0, 4)));
+  const bodyLength = frames.reduce((sum, frame) => sum + frame.length, 0);
+  const tag = new Uint8Array(10 + bodyLength);
+  tag.set([0x49, 0x44, 0x33, 0x03, 0x00, 0x00], 0);
+  tag.set(syncSafe(bodyLength), 6);
+  let offset = 10;
+  for (const frame of frames) { tag.set(frame, offset); offset += frame.length; }
+  return tag;
+}
+
+function existingId3Length(bytes) {
+  if (bytes.length < 10 || bytes[0] !== 0x49 || bytes[1] !== 0x44 || bytes[2] !== 0x33) return 0;
+  const size = (bytes[6] << 21) | (bytes[7] << 14) | (bytes[8] << 7) | bytes[9];
+  return Math.min(bytes.length, 10 + size + ((bytes[5] & 0x10) ? 10 : 0));
+}
+
+async function taggedBlob(file, track, index, total) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const offset = existingId3Length(bytes);
+  return new Blob([id3TagFor(track, index, total), bytes.slice(offset)], { type: "audio/mpeg" });
+}
+
+async function applyId3Tags() {
+  const tracks = tagTracks.length ? tagTracks : queueTracks;
+  if (!tagFiles.length || !tracks.length) return;
+  const files = sortTagFiles(tagFiles);
+  const total = Math.min(files.length, tracks.length);
+  const results = [];
+  dom.applyTags.disabled = true;
+  dom.tagProgress.hidden = false;
+  for (let index = 0; index < total; index++) {
+    const file = files[index];
+    const track = tracks[index];
+    dom.tagProgress.textContent = `${index + 1}/${total} 확인 중: ${file.name}`;
+    let duration;
+    try { duration = await audioFileDuration(file); }
+    catch (error) { results.push(`건너뜀 · ${file.name} (${error.message})`); continue; }
+    const difference = Math.abs(duration - Number(track.duration_ms || 0));
+    if (difference > 10000) {
+      results.push(`건너뜀 · ${file.name} (길이 차이 ${Math.round(difference / 1000)}초)`);
+      continue;
+    }
+    let blob;
+    try {
+      blob = await taggedBlob(file, track, index, total);
+    } catch (error) {
+      results.push(`실패 · ${file.name} (파일 데이터를 읽을 수 없음: ${error.message})`);
+      continue;
+    }
+    if (tagFileHandles[index]?.createWritable) {
+      try {
+        const handle = tagFileHandles[index];
+        const writable = await Promise.race([
+          handle.createWritable(),
+          new Promise((_, reject) => window.setTimeout(() => reject(new Error("파일 쓰기 준비 시간 초과")), 10000)),
+        ]);
+        await Promise.race([
+          writable.write(blob),
+          new Promise((_, reject) => window.setTimeout(() => reject(new Error("파일 쓰기 시간 초과")), 30000)),
+        ]);
+        if (writable.truncate) await writable.truncate(blob.size);
+        await writable.close();
+        results.push(`완료 · ${file.name}`);
+      } catch (error) {
+        results.push(`실패 · ${file.name} (${error.message})`);
+      }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = file.name; link.click();
+      URL.revokeObjectURL(url);
+      results.push(`다운로드 · ${file.name}`);
+    }
+  }
+  for (let index = total; index < files.length; index++) results.push(`건너뜀 · ${files[index].name} (Spotify 곡보다 파일이 많음)`);
+  dom.tagProgress.textContent = results.join("\n");
+  dom.applyTags.disabled = false;
+  showToast(`${results.filter((line) => line.startsWith("완료") || line.startsWith("다운로드")).length}개 파일 처리가 완료되었습니다.`, "success", 7000);
 }
 
 window.setInterval(pollPlayer, 1000);
