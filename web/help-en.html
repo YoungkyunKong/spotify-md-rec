@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Album Deck User Guide</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0d1110; --panel:#151b18; --line:#2b342f; --text:#edf3ee; --muted:#a8b2ab; --accent:#b9f36a; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.72 "Segoe UI", "Noto Sans KR", sans-serif; }
+    header { padding:56px 28px 48px; border-bottom:1px solid var(--line); background:radial-gradient(circle at 75% 15%, #29401d 0, transparent 34%), #101512; }
+    header div { max-width:1120px; margin:auto; }
+    header span { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.16em; }
+    header h1 { margin:10px 0 8px; font-size:clamp(34px, 6vw, 62px); line-height:1.05; }
+    header p { max-width:720px; margin:0; color:var(--muted); }
+    header a { display:inline-block; margin-top:18px; color:var(--accent); font-size:14px; }
+    .layout { display:grid; grid-template-columns:250px minmax(0, 820px); gap:52px; max-width:1180px; margin:0 auto; padding:42px 28px 90px; }
+    nav { position:sticky; top:24px; align-self:start; max-height:calc(100vh - 48px); overflow:auto; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+    nav strong { display:block; margin-bottom:10px; color:var(--accent); font-size:13px; letter-spacing:.1em; }
+    nav a { display:block; padding:5px 0; color:var(--muted); text-decoration:none; font-size:14px; }
+    nav a:hover { color:var(--accent); }
+    main { min-width:0; }
+    main > h1 { display:none; }
+    h2 { margin:58px 0 18px; padding-top:10px; color:var(--accent); font-size:28px; line-height:1.25; border-top:1px solid var(--line); }
+    main > h2:first-of-type { margin-top:0; }
+    h3 { margin:32px 0 10px; font-size:20px; }
+    p, li { color:#d8dfda; }
+    a { color:var(--accent); text-underline-offset:3px; }
+    strong { color:#fff; }
+    ul, ol { padding-left:1.45rem; }
+    li { margin:.35rem 0; }
+    li > ul, li > ol { margin:.35rem 0 .7rem; }
+    code { padding:.15em .38em; border:1px solid #354239; border-radius:5px; background:#101612; color:#d8ffae; font-family:"Cascadia Code", Consolas, monospace; font-size:.9em; }
+    pre { overflow:auto; padding:18px; border:1px solid var(--line); border-radius:12px; background:#080b09; }
+    pre code { padding:0; border:0; background:transparent; color:#dfe9e1; }
+    img { display:block; max-width:100%; height:auto; margin:24px auto 36px; border:1px solid var(--line); border-radius:14px; box-shadow:0 18px 48px #0008; }
+    footer { margin-top:70px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    @media (max-width:850px) { .layout { display:block; } nav { position:relative; top:0; max-height:none; margin-bottom:36px; columns:2; } nav strong { column-span:all; } }
+    @media print { :root { color-scheme:light; --bg:#fff; --panel:#fff; --line:#ddd; --text:#111; --muted:#555; --accent:#326b00; } header { padding:20px 0; background:#fff; } .layout { display:block; padding:0; } nav { display:none; } h1 { display:none; } h2 { break-after:avoid; } img { box-shadow:none; } a { color:#111; } }
+  </style>
+</head>
+<body>
+  <header><div><span>ALBUM DECK · v1.1.0</span><h1>User Guide</h1><p>Installation, Spotify setup, MiniDisc recording, and troubleshooting.</p><a href="help.html">한국어</a></div></header>
+  <div class="layout">
+    <nav aria-label="Contents"><strong>CONTENTS</strong><a href="#features">Features</a>
+<a href="#requirements">Requirements</a>
+<a href="#quick-start-with-the-windows-release-zip">Quick start with the Windows release ZIP</a>
+<a href="#create-a-spotify-developer-app">Create a Spotify Developer app</a>
+<a href="#first-time-album-deck-setup">First-time Album Deck setup</a>
+<a href="#connect-spotify">Connect Spotify</a>
+<a href="#play-an-album-or-playlist">Play an album or playlist</a>
+<a href="#record-to-minidisc">Record to MiniDisc</a>
+<a href="#write-id3-tags-to-mp3-files">Write ID3 tags to MP3 files</a>
+<a href="#troubleshooting">Troubleshooting</a>
+<a href="#other-ways-to-run-album-deck">Other ways to run Album Deck</a>
+<a href="#deployment">Deployment</a>
+<a href="#development-and-validation">Development and validation</a></nav>
+    <main><h1 id="album-deck">Album Deck</h1>
+<p>Album Deck is a personal Spotify web player designed for MiniDisc recording. It plays albums and playlists one track at a time and inserts a configurable silent gap between tracks. It does not download or save Spotify audio; Spotify Web Playback SDK and Web API calls run directly in the browser.</p>
+<p><img src="docs/images/home.jpg" alt="Album Deck home screen" loading="lazy"></p>
+<h2 id="features">Features</h2>
+<ul><li>Search by album or artist and play a complete album in order</li><li>Browse and play your Spotify playlists</li><li>Insert 0–30 seconds of silence between tracks in 0.5-second steps</li><li>Play through the Album Deck browser player or another Spotify Connect device</li><li>Open Windows audio output settings directly from the app</li><li>Open the complete Korean or English guide from the in-app <strong>Help</strong> button</li><li>Write Spotify metadata to ID3 tags in existing MP3 files</li><li>Run through the Windows installer, npm, Vercel, or a general Node.js host</li></ul>
+<h2 id="requirements">Requirements</h2>
+<ul><li>Windows 10/11, macOS, or another environment that can run Node.js</li><li>Node.js 20 or newer (the Windows release installer can install it automatically)</li><li>A Spotify Premium account</li><li>A Client ID from your own Spotify Developer app</li><li>An audio cable between the PC and MiniDisc recorder when recording through an optical or analog output</li></ul>
+<p>If the Spotify app is in development mode, add every Spotify account that will use Album Deck to the app&#39;s user list in the Developer Dashboard. Album Deck never asks for or distributes a Client Secret.</p>
+<h2 id="quick-start-with-the-windows-release-zip">Quick start with the Windows release ZIP</h2>
+<ol><li>Download the <a href="https://github.com/YoungkyunKong/spotify-md-rec/releases/latest/download/album-deck-windows-v1.1.0.zip">latest Windows release ZIP</a>.</li><li>Extract the entire ZIP into a new folder. Do not run the installer from inside the ZIP preview.</li><li>Double-click <code>install-windows.cmd</code> in the extracted folder.</li><li>If Node.js 20 or newer is missing, the installer uses Windows <code>winget</code> to install Node.js LTS. Allow the Windows permission prompt if one appears.</li><li>Start <strong>Album Deck</strong> from the desktop shortcut.</li><li>Complete <strong>Create a Spotify Developer app</strong> and <strong>First-time Album Deck setup</strong> below once.</li></ol>
+<p>The app is installed in <code>%LOCALAPPDATA%\Programs\AlbumDeck</code>. The installer creates <strong>Album Deck</strong> shortcuts on the desktop and Start menu, plus <strong>Album Deck Stop</strong> in the Start menu for stopping the background server. The app window prefers Edge, then Chrome, and finally the system default browser.</p>
+<p>If the installer reports that <code>winget</code> is unavailable, install <strong>App Installer</strong> from Microsoft Store or install Node.js 20 or newer manually, then run <code>install-windows.cmd</code> again.</p>
+<h3 id="updating-an-existing-installation">Updating an existing installation</h3>
+<p>Extract the new release ZIP into a separate folder and run <code>install-windows.cmd</code> again. The installer stops the existing Album Deck server and updates the application files and shortcuts. Your Client ID, login session, output device, and silent-gap setting remain available when you use the same Windows user and browser profile.</p>
+<h2 id="create-a-spotify-developer-app">Create a Spotify Developer app</h2>
+<p>Album Deck needs your own Spotify Developer app for login and playback.</p>
+<ol><li>Sign in to the <a href="https://developer.spotify.com/dashboard">Spotify Developer Dashboard</a>.</li><li>Select <strong>Create app</strong> and enter a name and description. For example, use <code>Album Deck</code> and <code>Personal MiniDisc recording player</code>.</li><li>Enter the following Redirect URI exactly:</li></ol>
+<pre><code class="language-text">http://127.0.0.1:8888/callback</code></pre>
+<ol start="4"><li>Save the app with Web API and Web Playback SDK enabled.</li><li>Copy the new app&#39;s <strong>Client ID</strong>. You do not need its Client Secret.</li><li>If the app is in development mode and another Spotify account will sign in, add that account in the app&#39;s user-management settings.</li></ol>
+<p>Use <code>127.0.0.1</code>, not <code>localhost</code>. The protocol, host, port, path, capitalization, and trailing slash must match the registered Redirect URI exactly. For a public deployment, register that HTTPS deployment URL followed by <code>/callback</code> as an additional Redirect URI.</p>
+<h2 id="first-time-album-deck-setup">First-time Album Deck setup</h2>
+<p>Start <strong>Album Deck</strong> from the desktop, or run <code>npm start</code> and open <a href="http://127.0.0.1:8888">http://127.0.0.1:8888</a>.</p>
+<ol><li>Select <strong>설정</strong> (Settings) at the top of the app.</li><li>Paste the Client ID copied from Spotify Dashboard into <strong>Client ID</strong>.</li><li>Confirm that <strong>Redirect URI</strong> is <code>http://127.0.0.1:8888/callback</code>.</li><li>Choose the browser Album Deck should use the next time it starts. The Windows app window uses Edge or Chrome.</li><li>Choose a playback device:<ul><li><strong>이 브라우저 · Album Deck</strong> (This browser · Album Deck) sends audio through the current PC. This is normally the correct choice for MD recording.</li><li>Select another listed Spotify Connect device to play through that device.</li></ul></li><li>Set the silent gap. Track detection varies by recorder and connection, so begin with a 2–3 second test.</li><li>Select <strong>저장</strong> (Save).</li></ol>
+<p><img src="docs/images/settings.jpg" alt="Album Deck settings" loading="lazy"></p>
+<p>Album Deck stores these settings and the Spotify login token in the current browser&#39;s local storage. On a shared PC, use <strong>Spotify 연결됨 → 연결 해제</strong> (Spotify connected → Disconnect) when you finish.</p>
+<h2 id="connect-spotify">Connect Spotify</h2>
+<ol><li>Select <strong>Spotify 연결</strong> (Connect Spotify) in the upper-right corner.</li><li>Choose the Premium account on Spotify&#39;s login and authorization page.</li><li>After authorization, Spotify returns you to Album Deck automatically.</li><li>Confirm that the button changes to <strong>Spotify 연결됨</strong> and your playlists appear.</li></ol>
+<p>To use another account, select <strong>Spotify 연결됨 → 다른 계정으로 연결</strong>. If Spotify automatically selects the current account, use <strong>Not you?</strong> on the Spotify page.</p>
+<p>The first login requests these scopes: <code>streaming</code>, <code>user-read-private</code>, <code>user-read-email</code>, <code>user-read-playback-state</code>, <code>user-modify-playback-state</code>, <code>playlist-read-private</code>, and <code>playlist-read-collaborative</code>.</p>
+<h2 id="play-an-album-or-playlist">Play an album or playlist</h2>
+<p>Select <strong>도움말</strong> (Help) at the top of the app to open this guide inside Album Deck. Use <strong>English</strong> at the top of the guide to switch languages, or select <strong>새 창에서 열기</strong> (Open in new window) for a larger browser view.</p>
+<h3 id="play-an-album">Play an album</h3>
+<ol><li>Select <strong>앨범 찾기</strong> (Find albums) in the left sidebar.</li><li>Enter an album or artist name and press Enter.</li><li>Select an album card in the results.</li><li>Check the tracks and order under <strong>선택한 음악</strong> (Selected tracks) on the right.</li><li>Playback starts from the first track. When a track finishes, Album Deck waits for the configured silent gap before starting the next track.</li></ol>
+<h3 id="play-a-playlist">Play a playlist</h3>
+<ol><li>Select <strong>내 플레이리스트</strong> (My playlists) in the left sidebar.</li><li>Select the desired playlist.</li><li>Check the tracks and their order before recording.</li></ol>
+<p>Album Deck does not modify the original Spotify album or playlist. Unavailable tracks may be removed from the playback queue, so verify the actual track count displayed in Album Deck before recording.</p>
+<p>The bottom player controls playback, previous and next track, seek position, and volume. <code>AAC · 256 kbps</code> describes Spotify&#39;s published web-player format; Album Deck does not measure the current stream. The app cannot inspect the actual format or bitrate on another Spotify Connect device and displays it as unavailable.</p>
+<h2 id="record-to-minidisc">Record to MiniDisc</h2>
+<h3 id="1-check-the-connection-and-windows-output">1. Check the connection and Windows output</h3>
+<ol><li>Connect the PC&#39;s optical output or audio-interface output to the MiniDisc recorder input.</li><li>In Album Deck, choose <strong>이 브라우저 · Album Deck</strong> under <strong>Settings → Playback device</strong>.</li><li>Select <strong>Windows 출력 설정 열기</strong> (Open Windows output settings) and route Edge or Chrome to the audio device connected to the recorder.</li><li>Close other audio sources, or route notifications and other system audio to another output.</li><li>Play a short test track and check the recorder&#39;s input level and left/right channels.</li></ol>
+<h3 id="2-test-the-silent-gap">2. Test the silent gap</h3>
+<ol><li>Enable automatic track marking on the MD recorder.</li><li>Start with a 2–3 second silent gap in Album Deck.</li><li>Record two or three test tracks.</li><li>Check that the recorder created one MD track for each song.</li><li>Increase the gap if tracks are joined. If tracks split unexpectedly, check the recorder&#39;s track-mark setting and input level.</li></ol>
+<h3 id="3-make-the-recording">3. Make the recording</h3>
+<ol><li>Select an album or playlist in Album Deck and verify the track order on the right.</li><li>Put the MD recorder into record-pause or recording-ready mode.</li><li>Start recording on the MD recorder, then start the first track in Album Deck.</li><li>Keep the Album Deck window open and prevent the PC from sleeping. The page detects track endings and starts each next track.</li><li>After the final track finishes and Album Deck stops, stop the MD recorder.</li><li>Check the MD track count, order, beginnings, and endings.</li></ol>
+<p>Spotify or network response time can add a little extra delay after the configured silent gap. Make a test recording with the same recorder and connection before an important recording session.</p>
+<h2 id="write-id3-tags-to-mp3-files">Write ID3 tags to MP3 files</h2>
+<p>This feature writes metadata from the selected Spotify album or playlist to MP3 files you already own. It does not save Spotify audio as MP3 files.</p>
+<ol><li>Select an album or playlist first.</li><li>Select <strong>ID3 태그</strong> above the track list on the right.</li><li>Select <strong>MP3 폴더 선택</strong> (Choose MP3 folder) and choose the folder containing the files.</li><li>Check the displayed MP3 file count and Spotify track count.</li><li>Arrange filenames in natural numeric order (<code>01</code>, <code>02</code>, <code>03</code>, and so on). Album Deck matches this order to the Spotify track order.</li><li>Select <strong>태그 기록</strong> (Write tags).</li></ol>
+<p>Album Deck writes title, artist, album, track number, and the release year when available. A file is skipped when its duration differs from the Spotify track by more than 10 seconds. If the browser cannot write to the selected folder, it downloads a tagged copy instead of replacing the original. Test with copies of important files first.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="spotify-connects-but-playback-does-not-start">Spotify connects but playback does not start</h3>
+<ul><li>Confirm that the account has Spotify Premium.</li><li>Confirm that the login account is in the Developer app&#39;s user list.</li><li>Check the Client ID and Redirect URI again.</li><li>In a current Edge or Chrome release, allow protected-content playback (EME).</li><li>Start playback briefly in the Spotify app, then refresh the device list in Album Deck settings.</li></ul>
+<h3 id="invalid-client-or-redirect-uri-error"><code>INVALID_CLIENT</code> or Redirect URI error</h3>
+<ul><li>Make sure the Dashboard and Album Deck values match exactly.</li><li>Use <code>http://127.0.0.1:8888/callback</code> for local operation.</li><li><code>localhost</code>, a different port, different capitalization, or an extra trailing slash is treated as a different address.</li></ul>
+<h3 id="playlists-do-not-appear">Playlists do not appear</h3>
+<ul><li>Select the refresh button beside the playlist heading in the left sidebar.</li><li>Confirm that private and collaborative playlist permissions were approved.</li><li>Disconnect Spotify in Album Deck and connect again.</li></ul>
+<h3 id="the-md-recorder-does-not-split-tracks">The MD recorder does not split tracks</h3>
+<ul><li>Increase the silent gap.</li><li>Check automatic track marking or digital sync recording on the recorder.</li><li>Make sure browser notifications or other system sounds do not enter the silent gap.</li></ul>
+<h3 id="the-server-remains-after-the-album-deck-window-closes">The server remains after the Album Deck window closes</h3>
+<p>Closing the Windows app window may leave the local server running for the next launch. Run <strong>Album Deck Stop</strong> from the Start menu to stop it.</p>
+<h2 id="other-ways-to-run-album-deck">Other ways to run Album Deck</h2>
+<h3 id="run-from-the-repository">Run from the repository</h3>
+<pre><code class="language-powershell">git clone https://github.com/YoungkyunKong/spotify-md-rec.git
+cd spotify-md-rec
+npm start</code></pre>
+<p>Open <a href="http://127.0.0.1:8888">http://127.0.0.1:8888</a>. Press <code>Ctrl+C</code> in the terminal to stop the server.</p>
+<h3 id="install-from-npm">Install from npm</h3>
+<pre><code class="language-powershell">npm install --global album-deck
+album-deck</code></pre>
+<p>To run it once without installing globally:</p>
+<pre><code class="language-powershell">npx album-deck</code></pre>
+<h2 id="deployment">Deployment</h2>
+<h3 id="build-the-windows-release-zip">Build the Windows release ZIP</h3>
+<pre><code class="language-powershell">npm run build:windows-zip</code></pre>
+<p>The command creates <code>dist/album-deck-windows-v&lt;version&gt;.zip</code>. The archive includes the app, installer scripts, Korean and English README files, and the screenshots under <code>docs/images</code>. It also generates <code>사용설명서.html</code> and <code>User-Guide.html</code> from the corresponding README files, so release users receive the same instructions shown on GitHub. The archive excludes <code>node_modules</code>, <code>.git</code>, and development build caches.</p>
+<h3 id="deploy-to-vercel">Deploy to Vercel</h3>
+<ol><li>Import this GitHub repository as a new Vercel project.</li><li>Keep the repository root as the Root Directory. <code>vercel.json</code> configures Framework Preset <code>Other</code>, build command <code>npm run build:vercel</code>, and output directory <code>public</code>.</li><li>Note the stable production URL, such as <code>https://album-deck.vercel.app</code>.</li><li>Add <code>https://your-production-domain/callback</code> to the Spotify app&#39;s Redirect URIs.</li><li>In the deployed Album Deck settings, save the same Redirect URI and your Client ID, then connect Spotify.</li></ol>
+<p>Set <code>SPOTIFY_CLIENT_ID</code> in Vercel to provide a default Client ID to new browsers. With a custom domain, set <code>PUBLIC_URL=https://your-production-domain</code> to provide a fixed Redirect URI default. Because Preview URLs can change on each deployment, test Spotify login on the registered stable production URL.</p>
+<h3 id="deploy-to-node-js-or-render">Deploy to Node.js or Render</h3>
+<p>Use Node.js 20 or newer, start command <code>npm start</code>, and health-check path <code>/healthz</code>. On Render, use the included <code>render.yaml</code> Blueprint or configure the service manually:</p>
+<pre><code class="language-text">Runtime: Node
+Build Command: npm install --omit=dev
+Start Command: npm start
+Health Check Path: /healthz</code></pre>
+<p>Optional environment variables:</p>
+<pre><code class="language-text">SPOTIFY_CLIENT_ID=your_spotify_client_id
+PUBLIC_URL=https://your-production-domain</code></pre>
+<p>A public deployment must use HTTPS. Register its exact <code>/callback</code> URL in Spotify Dashboard. Playback monitoring and silent-gap transitions run in the user&#39;s browser tab, so closing the tab also stops automatic track transitions.</p>
+<h2 id="development-and-validation">Development and validation</h2>
+<pre><code class="language-powershell">npm run check
+npm start</code></pre>
+<p>The Node.js server only provides static files from <code>web/</code> and public runtime configuration. The browser sends login, search, and playback requests directly to Spotify. Album Deck does not use a Client Secret.</p>
+<p>Spotify supplies all music, artwork, and metadata. Album Deck only performs account authorization and browser playback; it does not download or save Spotify audio. See the <a href="https://developer.spotify.com/documentation/web-playback-sdk">Spotify Web Playback SDK</a>, <a href="https://developer.spotify.com/documentation/web-api/concepts/redirect_uri">Spotify Redirect URI guide</a>, and <a href="https://www.spotify.com/us/legal/user-guidelines/">Spotify User Guidelines</a>.</p><footer>This help page is generated from README.en.md.</footer></main>
+  </div>
+</body>
+</html>

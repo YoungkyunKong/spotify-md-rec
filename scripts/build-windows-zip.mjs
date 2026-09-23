@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderUserGuide } from "./render-user-guide.mjs";
+import { buildHelpFiles } from "./build-help.mjs";
 
 const root = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const packageJson = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
@@ -13,6 +14,7 @@ const archive = resolve(outputRoot, `album-deck-windows-v${packageJson.version}.
 await rm(stage, { recursive: true, force: true });
 await rm(archive, { force: true });
 await mkdir(stage, { recursive: true });
+await buildHelpFiles(root);
 
 const files = [
   "assets",

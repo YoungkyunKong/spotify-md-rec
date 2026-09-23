@@ -49,6 +49,7 @@ function listItem(line) {
   return {
     indent: match[1].replaceAll("\t", "    ").length,
     type: match[2].endsWith(".") ? "ol" : "ul",
+    number: match[2].endsWith(".") ? Number.parseInt(match[2], 10) : null,
     text: match[3],
   };
 }
@@ -57,7 +58,8 @@ function renderList(lines, startIndex, indent) {
   const first = listItem(lines[startIndex]);
   const type = first.type;
   let index = startIndex;
-  let html = `<${type}>`;
+  const start = type === "ol" && first.number !== 1 ? ` start="${first.number}"` : "";
+  let html = `<${type}${start}>`;
 
   while (index < lines.length) {
     const item = listItem(lines[index]);
@@ -97,12 +99,12 @@ function markdownBody(markdown) {
       continue;
     }
 
-    if (line.startsWith("```")) {
-      const language = line.slice(3).trim();
+    if (line.trimStart().startsWith("```")) {
+      const language = line.trimStart().slice(3).trim();
       const code = [];
       index += 1;
-      while (index < lines.length && !lines[index].startsWith("```")) {
-        code.push(lines[index]);
+      while (index < lines.length && !lines[index].trimStart().startsWith("```")) {
+        code.push(lines[index].replace(/^ {0,3}/, ""));
         index += 1;
       }
       if (index < lines.length) index += 1;
@@ -131,7 +133,7 @@ function markdownBody(markdown) {
 
     const paragraph = [];
     while (index < lines.length && lines[index].trim()) {
-      if (paragraph.length && (lines[index].startsWith("```") || /^(#{1,3})\s+/.test(lines[index]) || listItem(lines[index]))) break;
+      if (paragraph.length && (lines[index].trimStart().startsWith("```") || /^(#{1,3})\s+/.test(lines[index]) || listItem(lines[index]))) break;
       paragraph.push(lines[index].trim());
       index += 1;
     }
@@ -177,7 +179,7 @@ export function renderUserGuide(markdown, version, options = {}) {
     nav a { display:block; padding:5px 0; color:var(--muted); text-decoration:none; font-size:14px; }
     nav a:hover { color:var(--accent); }
     main { min-width:0; }
-    h1 { display:none; }
+    main > h1 { display:none; }
     h2 { margin:58px 0 18px; padding-top:10px; color:var(--accent); font-size:28px; line-height:1.25; border-top:1px solid var(--line); }
     main > h2:first-of-type { margin-top:0; }
     h3 { margin:32px 0 10px; font-size:20px; }

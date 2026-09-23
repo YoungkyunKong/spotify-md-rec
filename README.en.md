@@ -13,6 +13,7 @@ Album Deck is a personal Spotify web player designed for MiniDisc recording. It 
 - Insert 0–30 seconds of silence between tracks in 0.5-second steps
 - Play through the Album Deck browser player or another Spotify Connect device
 - Open Windows audio output settings directly from the app
+- Open the complete Korean or English guide from the in-app **Help** button
 - Write Spotify metadata to ID3 tags in existing MP3 files
 - Run through the Windows installer, npm, Vercel, or a general Node.js host
 
@@ -91,6 +92,8 @@ To use another account, select **Spotify 연결됨 → 다른 계정으로 연�
 The first login requests these scopes: `streaming`, `user-read-private`, `user-read-email`, `user-read-playback-state`, `user-modify-playback-state`, `playlist-read-private`, and `playlist-read-collaborative`.
 
 ## Play an album or playlist
+
+Select **도움말** (Help) at the top of the app to open this guide inside Album Deck. Use **English** at the top of the guide to switch languages, or select **새 창에서 열기** (Open in new window) for a larger browser view.
 
 ### Play an album
 

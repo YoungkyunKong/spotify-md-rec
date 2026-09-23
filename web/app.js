@@ -35,6 +35,7 @@ const dom = {
   streamQualityNote: $("#streamQualityNote"), miniStreamQuality: $("#miniStreamQuality"),
   output: $("#outputStatus"), equalizer: $("#equalizer"), heroDiscs: $$(".hero-disc"), attribution: $("#spotifyAttribution"),
   toast: $("#toastRegion"), settings: $("#settingsDialog"), settingsButton: $("#settingsButton"),
+  help: $("#helpDialog"), helpButton: $("#helpButton"), helpClose: $("#helpClose"),
   settingsCancel: $("#settingsCancel"), settingsSave: $("#settingsSave"), gapInput: $("#gapInput"),
   gapValue: $("#gapValue"), gapBadge: $("#gapBadge"),
   clientIdInput: $("#clientIdInput"), redirectUriInput: $("#redirectUriInput"),
@@ -1170,6 +1171,8 @@ dom.connect.addEventListener("click", () => {
   startAuthorization().catch((error) => showToast(error.message, "error"));
 });
 dom.settingsButton.addEventListener("click", () => openSettingsDialog().catch((error) => showToast(error.message, "error")));
+dom.helpButton.addEventListener("click", () => dom.help.showModal());
+dom.helpClose.addEventListener("click", () => dom.help.close());
 dom.refreshDevices.addEventListener("click", refreshDeviceOptions);
 dom.deviceSelect.addEventListener("change", () => { dom.localOutput.hidden = dom.deviceSelect.value !== "browser"; });
 dom.openSoundSettings.addEventListener("click", () => {

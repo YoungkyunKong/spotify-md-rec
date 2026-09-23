@@ -13,6 +13,7 @@ Album Deck은 Spotify 앨범과 플레이리스트를 한 곡씩 재생하고, �
 - 곡 사이에 0~30초의 무음 삽입(0.5초 단위)
 - Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치 선택
 - Windows 오디오 출력 설정 바로 열기
+- 프로그램의 **도움말** 버튼에서 한글·영문 전체 사용설명서 열기
 - 선택한 Spotify 곡 정보로 MP3 파일의 ID3 태그 기록
 - Windows 설치 스크립트, npm 실행, Vercel 및 일반 Node.js 배포 지원
 
@@ -91,6 +92,8 @@ Redirect URI는 `localhost`가 아니라 `127.0.0.1`이어야 하며, 프로토�
 첫 로그인에서는 다음 권한을 요청합니다: `streaming`, `user-read-private`, `user-read-email`, `user-read-playback-state`, `user-modify-playback-state`, `playlist-read-private`, `playlist-read-collaborative`.
 
 ## 앨범 또는 플레이리스트 재생
+
+화면 위쪽의 **도움말**을 누르면 이 사용설명서를 앱 안에서 열 수 있습니다. 도움말 위쪽의 **English**로 영문 설명서로 전환할 수 있고, **새 창에서 열기**를 누르면 더 큰 브라우저 창에서 볼 수 있습니다.
 
 ### 앨범 재생
 

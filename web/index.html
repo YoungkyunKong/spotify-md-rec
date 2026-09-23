@@ -50,6 +50,9 @@
         <header class="topbar">
           <div class="breadcrumbs"><span>YOUR LIBRARY</span><b>/</b><strong id="crumbCurrent">앨범 찾기</strong></div>
           <div class="top-actions">
+            <button class="settings-button help-button" id="helpButton" type="button" title="Album Deck 사용설명서">
+              <span class="help-glyph" aria-hidden="true">?</span><span class="help-button-label">도움말</span>
+            </button>
             <button class="settings-button" id="settingsButton" type="button" title="Spotify 및 재생 설정">
               <span class="settings-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.64 8.94a1.7 1.7 0 0 0-.34-1.88L4.24 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10.04 3H10V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 7l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"></path></svg></span>
               <span class="settings-button-label">설정</span><b id="gapBadge">2초</b>
@@ -183,6 +186,16 @@
     </footer>
 
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    <dialog class="help-dialog" id="helpDialog">
+      <div class="help-dialog-toolbar">
+        <div><span class="help-glyph" aria-hidden="true">?</span><strong>Album Deck 사용설명서</strong></div>
+        <div class="help-dialog-actions">
+          <a class="quiet-button" href="/help.html" target="_blank" rel="noreferrer">새 창에서 열기 ↗</a>
+          <button class="connect-button" id="helpClose" type="button">닫기</button>
+        </div>
+      </div>
+      <iframe src="/help.html" title="Album Deck 사용설명서"></iframe>
+    </dialog>
     <dialog class="account-dialog" id="accountDialog">
       <div class="dialog-mark"><span class="brand-mark"><i></i><i></i><i></i></span></div>
       <h2 id="dialogTitle">Spotify 연결</h2>
