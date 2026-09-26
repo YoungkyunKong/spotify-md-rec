@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,10 +13,12 @@ if (publicUrl && publicUrl.protocol !== "https:" && publicUrl.hostname !== "127.
   throw new Error("PUBLIC_URL must use HTTPS except for a loopback address.");
 }
 const redirectUri = publicUrl ? new URL("/callback", publicUrl).href : null;
-const browserConfigPath = process.env.LOCALAPPDATA
+const browserConfigPath = process.platform === "win32" && process.env.LOCALAPPDATA
   ? resolve(process.env.LOCALAPPDATA, "AlbumDeck", "browser.json")
-  : null;
-const browserExecutables = {
+  : process.platform === "darwin"
+    ? resolve(homedir(), "Library", "Application Support", "AlbumDeck", "browser.json")
+    : null;
+const windowsBrowsers = {
   edge: [
     resolve(process.env.ProgramFiles || "", "Microsoft\\Edge\\Application\\msedge.exe"),
     resolve(process.env["ProgramFiles(x86)"] || "", "Microsoft\\Edge\\Application\\msedge.exe"),
@@ -27,6 +30,13 @@ const browserExecutables = {
     resolve(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
   ],
 };
+const macBrowsers = {
+  safari: ["/Applications/Safari.app", "/System/Applications/Safari.app"],
+  chrome: ["/Applications/Google Chrome.app"],
+  edge: ["/Applications/Microsoft Edge.app"],
+};
+const browserExecutables = process.platform === "darwin" ? macBrowsers : process.platform === "win32" ? windowsBrowsers : {};
+const allowedBrowserPreferences = ["auto", ...Object.keys(browserExecutables)];
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -57,7 +67,7 @@ const server = createServer(async (request, response) => {
       try {
         const body = await readRequestBody(request);
         const payload = JSON.parse(body || "{}");
-        if (!["auto", "edge", "chrome"].includes(payload.preference)) throw new Error("Invalid browser preference");
+        if (!allowedBrowserPreferences.includes(payload.preference)) throw new Error("Invalid browser preference");
         if (!browserConfigPath) throw new Error("Browser settings are only available locally.");
         await mkdir(resolve(browserConfigPath, ".."), { recursive: true });
         await writeFile(browserConfigPath, JSON.stringify({ preference: payload.preference }, null, 2), "utf8");
@@ -129,7 +139,7 @@ async function browserConfig() {
   if (browserConfigPath) {
     try {
       const saved = JSON.parse(await readFile(browserConfigPath, "utf8"));
-      if (["auto", "edge", "chrome"].includes(saved.preference)) preference = saved.preference;
+      if (allowedBrowserPreferences.includes(saved.preference)) preference = saved.preference;
     } catch { /* Use automatic selection when no local preference exists. */ }
   }
   const available = [];
@@ -141,7 +151,7 @@ async function browserConfig() {
   const selected = preference !== "auto" && available.includes(preference)
     ? preference
     : available[0] || "system";
-  return { preference, available, selected };
+  return { preference, available, selected, platform: process.platform };
 }
 
 function readRequestBody(request) {

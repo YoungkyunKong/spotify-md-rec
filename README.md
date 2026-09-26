@@ -12,7 +12,7 @@ Album Deck은 Spotify 앨범과 플레이리스트를 한 곡씩 재생하고, �
 - 사용자의 Spotify 플레이리스트 조회 및 순서 재생
 - 곡 사이에 0~30초의 무음 삽입(0.5초 단위)
 - Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치 선택
-- Windows 오디오 출력 설정 바로 열기
+- Windows 앱별 출력과 macOS 시스템 출력 설정 안내
 - 프로그램의 **도움말** 버튼에서 한글·영문 전체 사용설명서 열기
 - 선택한 Spotify 곡 정보로 MP3 파일의 ID3 태그 기록
 - Windows 설치 스크립트, npm 실행, Vercel 및 일반 Node.js 배포 지원
@@ -44,6 +44,12 @@ Spotify 앱이 개발 모드라면 실제로 로그인할 Spotify 계정을 Deve
 
 새 배포 ZIP을 별도 폴더에 압축 해제하고 `install-windows.cmd`를 다시 실행합니다. 실행 중인 Album Deck 서버를 정지한 뒤 프로그램 파일과 바로가기를 갱신합니다. 같은 Windows 사용자와 브라우저 프로필을 사용하면 저장된 Client ID, 로그인 정보, 재생 장치와 무음 길이는 유지됩니다.
 
+## macOS에서 실행
+
+macOS에서 `album-deck` 명령을 실행하면 Safari가 기본으로 열립니다. **설정 → 기본 브라우저**에서 설치된 Chrome 또는 Edge를 선택할 수도 있으며, 선택한 브라우저가 없으면 Safari로 자동 대체합니다. Spotify Web Playback SDK는 데스크톱 Safari를 지원합니다.
+
+macOS의 **시스템 설정 → 사운드 → 출력**에서 MD 레코더에 연결된 장치를 선택할 수 있습니다. 이 설정은 Safari만이 아니라 Mac 전체 출력에 적용됩니다. Safari만 별도 장치로 보내고 다른 앱은 내장 스피커로 유지하려면 [SoundSource](https://rogueamoeba.com/soundsource/) 같은 앱별 오디오 라우팅 도구가 필요합니다.
+
 ## Spotify Developer 앱 준비
 
 Spotify 로그인과 재생을 위해 본인의 Spotify Developer 앱이 필요합니다.
@@ -69,7 +75,7 @@ Redirect URI는 `localhost`가 아니라 `127.0.0.1`이어야 하며, 프로토�
 1. 화면 위쪽의 **설정**을 누릅니다.
 2. **Client ID**에 Spotify Dashboard에서 복사한 값을 붙여 넣습니다.
 3. **Redirect URI**가 `http://127.0.0.1:8888/callback`인지 확인합니다.
-4. 다음 실행에 사용할 기본 브라우저를 고릅니다. Windows 앱 창은 Edge 또는 Chrome을 사용합니다.
+4. 다음 실행에 사용할 기본 브라우저를 고릅니다. Windows에서는 Edge 또는 Chrome을, macOS에서는 Safari를 기본으로 사용합니다.
 5. **재생 장치**에서 다음 중 하나를 고릅니다.
    - **이 브라우저 · Album Deck**: 현재 PC에서 소리를 출력합니다. MD 녹음에는 보통 이 항목을 사용합니다.
    - 다른 Spotify Connect 장치: 목록에 표시된 별도 장치에서 재생합니다.
@@ -115,13 +121,14 @@ Album Deck은 Spotify의 원본 앨범이나 플레이리스트를 수정하지 
 
 ## MiniDisc 녹음 방법
 
-### 1. 연결과 Windows 출력 확인
+### 1. 연결과 오디오 출력 확인
 
 1. PC의 광출력 또는 오디오 인터페이스 출력을 MD 레코더의 입력에 연결합니다.
 2. Album Deck **설정 → 재생 장치**에서 **이 브라우저 · Album Deck**을 선택합니다.
-3. **Windows 출력 설정 열기**를 눌러 Edge 또는 Chrome의 출력을 MD 레코더에 연결된 장치로 지정합니다.
-4. Spotify나 시스템 알림 등 다른 소리가 같은 출력으로 나가지 않도록 닫거나 다른 출력 장치로 옮깁니다.
-5. 짧은 곡으로 시험 재생해 MD 레코더의 입력 레벨과 좌우 채널을 확인합니다.
+3. Windows에서는 **Windows 출력 설정 열기**를 눌러 Edge 또는 Chrome의 출력을 MD 레코더에 연결된 장치로 지정합니다.
+4. macOS에서는 **시스템 설정 → 사운드 → 출력**에서 MD 연결 장치를 선택합니다. macOS 기본 설정은 시스템 전체 출력을 바꾸므로 Safari만 별도로 지정하려면 앱별 오디오 라우팅 도구를 사용해야 합니다.
+5. Spotify나 시스템 알림 등 다른 소리가 같은 출력으로 나가지 않도록 닫거나 다른 출력 장치로 옮깁니다.
+6. 짧은 곡으로 시험 재생해 MD 레코더의 입력 레벨과 좌우 채널을 확인합니다.
 
 ### 2. 곡간 무음 시험
 
@@ -162,7 +169,7 @@ Spotify 또는 네트워크 응답 지연 때문에 설정한 무음 뒤에 다�
 - Spotify Premium 계정인지 확인합니다.
 - Developer Dashboard의 앱 사용자 목록에 로그인 계정이 등록되어 있는지 확인합니다.
 - Client ID와 Redirect URI를 다시 확인합니다.
-- 최신 Edge 또는 Chrome에서 보호된 콘텐츠 재생(EME)이 허용되어 있는지 확인합니다.
+- 최신 Safari, Edge 또는 Chrome에서 보호된 콘텐츠 재생(EME)이 허용되어 있는지 확인합니다.
 - Spotify 앱 등 다른 장치에서 잠깐 재생한 뒤 Album Deck 설정에서 장치 목록을 새로고침합니다.
 
 ### `INVALID_CLIENT` 또는 Redirect URI 오류

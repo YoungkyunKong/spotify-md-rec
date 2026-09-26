@@ -41,7 +41,7 @@ const dom = {
   clientIdInput: $("#clientIdInput"), redirectUriInput: $("#redirectUriInput"),
   browserSelect: $("#browserSelect"),
   deviceSelect: $("#deviceSelect"), refreshDevices: $("#refreshDevices"),
-  localOutput: $("#localOutputSetting"), openSoundSettings: $("#openSoundSettings"),
+  localOutput: $("#localOutputSetting"), localOutputHelp: $("#localOutputHelp"), openSoundSettings: $("#openSoundSettings"),
   queueTitle: $("#contextQueueTitle"), queueCount: $("#contextQueueCount"), queueList: $("#contextTrackList"),
   tagEditor: $("#tagEditorButton"), tagDialog: $("#tagDialog"), chooseTagFiles: $("#chooseTagFiles"),
   tagFileInput: $("#tagFileInput"), tagFileSummary: $("#tagFileSummary"), tagProgress: $("#tagProgress"),
@@ -77,6 +77,7 @@ let queueInGap = false;
 let gapSeconds = readGapSeconds();
 let targetDevice = readTargetDevice();
 let browserPreference = readBrowserPreference();
+let runtimePlatform = "web";
 let availableDevices = [];
 let volumeTimer = null;
 let spotifyBackoffUntil = 0;
@@ -472,7 +473,7 @@ function spotifyError(response, data) {
 function readBrowserPreference() {
   try {
     const value = localStorage.getItem(BROWSER_KEY);
-    return ["auto", "edge", "chrome"].includes(value) ? value : "auto";
+    return ["auto", "safari", "edge", "chrome"].includes(value) ? value : "auto";
   } catch { return "auto"; }
 }
 
@@ -482,14 +483,22 @@ async function refreshBrowserOptions() {
     const response = await fetch("/browser-config", { cache: "no-store" });
     if (response.ok) config = await response.json();
   } catch { /* Vercel and other static hosts use the browser-local fallback. */ }
+  runtimePlatform = config?.platform || "web";
   const available = Array.isArray(config?.available) && config.available.length
     ? config.available
     : ["edge", "chrome"];
-  const labels = { auto: "자동 선택", edge: "Microsoft Edge", chrome: "Google Chrome", system: "시스템 기본 브라우저" };
-  const values = ["auto", ...available.filter((value) => ["edge", "chrome"].includes(value))];
+  const labels = { auto: "자동 선택", safari: "Safari", edge: "Microsoft Edge", chrome: "Google Chrome", system: "시스템 기본 브라우저" };
+  const values = ["auto", ...available.filter((value) => ["safari", "edge", "chrome"].includes(value))];
   const selected = values.includes(config?.selected) ? config.selected : (values.includes(browserPreference) ? browserPreference : "auto");
   browserPreference = selected;
   dom.browserSelect.replaceChildren(...values.map((value) => new Option(labels[value], value, false, value === selected)));
+  if (runtimePlatform === "darwin") {
+    dom.localOutputHelp.textContent = "macOS 기본 출력 장치를 사용합니다. Safari만 별도 장치로 보내려면 앱별 오디오 라우팅 도구가 필요합니다.";
+    dom.openSoundSettings.textContent = "macOS 출력 설정 안내";
+  } else if (runtimePlatform === "win32") {
+    dom.localOutputHelp.textContent = "Windows에서 사용 중인 브라우저의 출력 장치를 별도로 지정할 수 있습니다.";
+    dom.openSoundSettings.textContent = "Windows 출력 설정 열기";
+  }
 }
 
 async function loadProfile() {
@@ -1176,8 +1185,14 @@ dom.helpClose.addEventListener("click", () => dom.help.close());
 dom.refreshDevices.addEventListener("click", refreshDeviceOptions);
 dom.deviceSelect.addEventListener("change", () => { dom.localOutput.hidden = dom.deviceSelect.value !== "browser"; });
 dom.openSoundSettings.addEventListener("click", () => {
-  window.location.href = "ms-settings:apps-volume";
-  showToast("Windows 설정에서 사용 중인 브라우저의 출력 장치를 선택하세요.", "warning", 7000);
+  if (runtimePlatform === "darwin") {
+    showToast("시스템 설정 → 사운드 → 출력에서 장치를 선택하세요. macOS 기본 설정은 Safari가 아닌 시스템 전체 출력을 변경합니다.", "warning", 9000);
+    return;
+  }
+  if (runtimePlatform === "win32") window.location.href = "ms-settings:apps-volume";
+  showToast(runtimePlatform === "win32"
+    ? "Windows 설정에서 사용 중인 브라우저의 출력 장치를 선택하세요."
+    : "운영체제의 사운드 설정에서 출력 장치를 선택하세요.", "warning", 7000);
 });
 dom.gapInput.addEventListener("input", () => { dom.gapValue.textContent = gapLabel(dom.gapInput.value); });
 dom.settingsCancel.addEventListener("click", () => {

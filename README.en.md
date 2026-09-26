@@ -12,7 +12,7 @@ Album Deck is a personal Spotify web player designed for MiniDisc recording. It 
 - Browse and play your Spotify playlists
 - Insert 0–30 seconds of silence between tracks in 0.5-second steps
 - Play through the Album Deck browser player or another Spotify Connect device
-- Open Windows audio output settings directly from the app
+- Show platform-specific guidance for Windows per-app output and macOS system output
 - Open the complete Korean or English guide from the in-app **Help** button
 - Write Spotify metadata to ID3 tags in existing MP3 files
 - Run through the Windows installer, npm, Vercel, or a general Node.js host
@@ -44,6 +44,12 @@ If the installer reports that `winget` is unavailable, install **App Installer**
 
 Extract the new release ZIP into a separate folder and run `install-windows.cmd` again. The installer stops the existing Album Deck server and updates the application files and shortcuts. Your Client ID, login session, output device, and silent-gap setting remain available when you use the same Windows user and browser profile.
 
+## Run on macOS
+
+When you run the `album-deck` command on macOS, Album Deck opens Safari by default. You can choose an installed Chrome or Edge under **Settings → Default browser**. If the selected browser is unavailable, Album Deck falls back to Safari. Spotify Web Playback SDK supports desktop Safari.
+
+Choose the device connected to the MD recorder under **System Settings → Sound → Output**. macOS applies this choice to the entire Mac rather than Safari alone. To route Safari to one device while other apps continue through the built-in speakers, use a per-application audio router such as [SoundSource](https://rogueamoeba.com/soundsource/).
+
 ## Create a Spotify Developer app
 
 Album Deck needs your own Spotify Developer app for login and playback.
@@ -69,7 +75,7 @@ Start **Album Deck** from the desktop, or run `npm start` and open [http://127.0
 1. Select **설정** (Settings) at the top of the app.
 2. Paste the Client ID copied from Spotify Dashboard into **Client ID**.
 3. Confirm that **Redirect URI** is `http://127.0.0.1:8888/callback`.
-4. Choose the browser Album Deck should use the next time it starts. The Windows app window uses Edge or Chrome.
+4. Choose the browser Album Deck should use the next time it starts. Windows uses Edge or Chrome, while macOS uses Safari by default.
 5. Choose a playback device:
    - **이 브라우저 · Album Deck** (This browser · Album Deck) sends audio through the current PC. This is normally the correct choice for MD recording.
    - Select another listed Spotify Connect device to play through that device.
@@ -115,13 +121,14 @@ The bottom player controls playback, previous and next track, seek position, and
 
 ## Record to MiniDisc
 
-### 1. Check the connection and Windows output
+### 1. Check the connection and audio output
 
 1. Connect the PC's optical output or audio-interface output to the MiniDisc recorder input.
 2. In Album Deck, choose **이 브라우저 · Album Deck** under **Settings → Playback device**.
-3. Select **Windows 출력 설정 열기** (Open Windows output settings) and route Edge or Chrome to the audio device connected to the recorder.
-4. Close other audio sources, or route notifications and other system audio to another output.
-5. Play a short test track and check the recorder's input level and left/right channels.
+3. On Windows, select **Windows 출력 설정 열기** (Open Windows output settings) and route Edge or Chrome to the audio device connected to the recorder.
+4. On macOS, choose the MD-connected device under **System Settings → Sound → Output**. This changes system-wide output; use a per-application audio router if Safari alone must use the device.
+5. Close other audio sources, or route notifications and other system audio to another output.
+6. Play a short test track and check the recorder's input level and left/right channels.
 
 ### 2. Test the silent gap
 
@@ -162,7 +169,7 @@ Album Deck writes title, artist, album, track number, and the release year when 
 - Confirm that the account has Spotify Premium.
 - Confirm that the login account is in the Developer app's user list.
 - Check the Client ID and Redirect URI again.
-- In a current Edge or Chrome release, allow protected-content playback (EME).
+- In a current Safari, Edge, or Chrome release, allow protected-content playback (EME).
 - Start playback briefly in the Spotify app, then refresh the device list in Album Deck settings.
 
 ### `INVALID_CLIENT` or Redirect URI error

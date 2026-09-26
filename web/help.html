@@ -46,6 +46,7 @@
     <nav aria-label="목차"><strong>CONTENTS</strong><a href="#주요-기능">주요 기능</a>
 <a href="#준비물">준비물</a>
 <a href="#가장-빠른-시작-windows-배포-zip">가장 빠른 시작: Windows 배포 ZIP</a>
+<a href="#macos에서-실행">macOS에서 실행</a>
 <a href="#spotify-developer-앱-준비">Spotify Developer 앱 준비</a>
 <a href="#album-deck-최초-설정">Album Deck 최초 설정</a>
 <a href="#spotify-연결">Spotify 연결</a>
@@ -60,7 +61,7 @@
 <p>Album Deck은 Spotify 앨범과 플레이리스트를 한 곡씩 재생하고, 곡 사이에 지정한 무음 시간을 넣어 MiniDisc 녹음을 돕는 개인용 웹 플레이어입니다. Spotify 음원을 내려받거나 저장하지 않으며, 브라우저에서 Spotify Web Playback SDK와 Web API를 직접 사용합니다.</p>
 <p><img src="docs/images/home.jpg" alt="Album Deck 초기 화면" loading="lazy"></p>
 <h2 id="주요-기능">주요 기능</h2>
-<ul><li>앨범명 또는 아티스트 검색 후 앨범 전체 순서 재생</li><li>사용자의 Spotify 플레이리스트 조회 및 순서 재생</li><li>곡 사이에 0~30초의 무음 삽입(0.5초 단위)</li><li>Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치 선택</li><li>Windows 오디오 출력 설정 바로 열기</li><li>프로그램의 <strong>도움말</strong> 버튼에서 한글·영문 전체 사용설명서 열기</li><li>선택한 Spotify 곡 정보로 MP3 파일의 ID3 태그 기록</li><li>Windows 설치 스크립트, npm 실행, Vercel 및 일반 Node.js 배포 지원</li></ul>
+<ul><li>앨범명 또는 아티스트 검색 후 앨범 전체 순서 재생</li><li>사용자의 Spotify 플레이리스트 조회 및 순서 재생</li><li>곡 사이에 0~30초의 무음 삽입(0.5초 단위)</li><li>Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치 선택</li><li>Windows 앱별 출력과 macOS 시스템 출력 설정 안내</li><li>프로그램의 <strong>도움말</strong> 버튼에서 한글·영문 전체 사용설명서 열기</li><li>선택한 Spotify 곡 정보로 MP3 파일의 ID3 태그 기록</li><li>Windows 설치 스크립트, npm 실행, Vercel 및 일반 Node.js 배포 지원</li></ul>
 <h2 id="준비물">준비물</h2>
 <ul><li>Windows 10/11, macOS 또는 Node.js를 실행할 수 있는 환경</li><li>Node.js 20 이상(Windows 배포 ZIP의 설치 스크립트는 필요하면 자동 설치)</li><li>Spotify Premium 계정</li><li>사용자가 만든 Spotify Developer 앱의 Client ID</li><li>광출력 또는 아날로그 출력으로 녹음할 경우 PC와 MD 레코더를 연결할 오디오 케이블</li></ul>
 <p>Spotify 앱이 개발 모드라면 실제로 로그인할 Spotify 계정을 Developer Dashboard의 사용자 목록에 등록해야 합니다. Client Secret은 입력하거나 배포하지 않습니다.</p>
@@ -70,6 +71,9 @@
 <p><code>winget</code>을 찾을 수 없다는 메시지가 나오면 Microsoft Store에서 <strong>App Installer</strong>를 설치하거나 Node.js 20 이상을 직접 설치한 뒤 <code>install-windows.cmd</code>를 다시 실행하세요.</p>
 <h3 id="기존-설치-업데이트">기존 설치 업데이트</h3>
 <p>새 배포 ZIP을 별도 폴더에 압축 해제하고 <code>install-windows.cmd</code>를 다시 실행합니다. 실행 중인 Album Deck 서버를 정지한 뒤 프로그램 파일과 바로가기를 갱신합니다. 같은 Windows 사용자와 브라우저 프로필을 사용하면 저장된 Client ID, 로그인 정보, 재생 장치와 무음 길이는 유지됩니다.</p>
+<h2 id="macos에서-실행">macOS에서 실행</h2>
+<p>macOS에서 <code>album-deck</code> 명령을 실행하면 Safari가 기본으로 열립니다. <strong>설정 → 기본 브라우저</strong>에서 설치된 Chrome 또는 Edge를 선택할 수도 있으며, 선택한 브라우저가 없으면 Safari로 자동 대체합니다. Spotify Web Playback SDK는 데스크톱 Safari를 지원합니다.</p>
+<p>macOS의 <strong>시스템 설정 → 사운드 → 출력</strong>에서 MD 레코더에 연결된 장치를 선택할 수 있습니다. 이 설정은 Safari만이 아니라 Mac 전체 출력에 적용됩니다. Safari만 별도 장치로 보내고 다른 앱은 내장 스피커로 유지하려면 <a href="https://rogueamoeba.com/soundsource/">SoundSource</a> 같은 앱별 오디오 라우팅 도구가 필요합니다.</p>
 <h2 id="spotify-developer-앱-준비">Spotify Developer 앱 준비</h2>
 <p>Spotify 로그인과 재생을 위해 본인의 Spotify Developer 앱이 필요합니다.</p>
 <ol><li><a href="https://developer.spotify.com/dashboard">Spotify Developer Dashboard</a>에 Spotify 계정으로 로그인합니다.</li><li><strong>Create app</strong>을 선택하고 앱 이름과 설명을 입력합니다. 예: 이름 <code>Album Deck</code>, 설명 <code>Personal MiniDisc recording player</code>.</li><li>Redirect URI에 아래 주소를 정확히 입력합니다.</li></ol>
@@ -78,7 +82,7 @@
 <p>Redirect URI는 <code>localhost</code>가 아니라 <code>127.0.0.1</code>이어야 하며, 프로토콜·포트·경로와 끝 슬래시 여부까지 등록값과 완전히 같아야 합니다. 공개 서버에 배포할 때는 해당 HTTPS 배포 주소의 <code>/callback</code>도 별도로 등록합니다.</p>
 <h2 id="album-deck-최초-설정">Album Deck 최초 설정</h2>
 <p>바탕 화면의 <strong>Album Deck</strong>을 실행하거나 <code>npm start</code> 후 <a href="http://127.0.0.1:8888">http://127.0.0.1:8888</a>을 엽니다.</p>
-<ol><li>화면 위쪽의 <strong>설정</strong>을 누릅니다.</li><li><strong>Client ID</strong>에 Spotify Dashboard에서 복사한 값을 붙여 넣습니다.</li><li><strong>Redirect URI</strong>가 <code>http://127.0.0.1:8888/callback</code>인지 확인합니다.</li><li>다음 실행에 사용할 기본 브라우저를 고릅니다. Windows 앱 창은 Edge 또는 Chrome을 사용합니다.</li><li><strong>재생 장치</strong>에서 다음 중 하나를 고릅니다.<ul><li><strong>이 브라우저 · Album Deck</strong>: 현재 PC에서 소리를 출력합니다. MD 녹음에는 보통 이 항목을 사용합니다.</li><li>다른 Spotify Connect 장치: 목록에 표시된 별도 장치에서 재생합니다.</li></ul></li><li><strong>무음 길이</strong>를 정합니다. MD가 곡 경계를 안정적으로 인식하는 값은 레코더와 연결 방식에 따라 다르므로 먼저 2~3초로 시험하는 것을 권장합니다.</li><li><strong>저장</strong>을 누릅니다.</li></ol>
+<ol><li>화면 위쪽의 <strong>설정</strong>을 누릅니다.</li><li><strong>Client ID</strong>에 Spotify Dashboard에서 복사한 값을 붙여 넣습니다.</li><li><strong>Redirect URI</strong>가 <code>http://127.0.0.1:8888/callback</code>인지 확인합니다.</li><li>다음 실행에 사용할 기본 브라우저를 고릅니다. Windows에서는 Edge 또는 Chrome을, macOS에서는 Safari를 기본으로 사용합니다.</li><li><strong>재생 장치</strong>에서 다음 중 하나를 고릅니다.<ul><li><strong>이 브라우저 · Album Deck</strong>: 현재 PC에서 소리를 출력합니다. MD 녹음에는 보통 이 항목을 사용합니다.</li><li>다른 Spotify Connect 장치: 목록에 표시된 별도 장치에서 재생합니다.</li></ul></li><li><strong>무음 길이</strong>를 정합니다. MD가 곡 경계를 안정적으로 인식하는 값은 레코더와 연결 방식에 따라 다르므로 먼저 2~3초로 시험하는 것을 권장합니다.</li><li><strong>저장</strong>을 누릅니다.</li></ol>
 <p><img src="docs/images/settings.jpg" alt="Album Deck 설정 화면" loading="lazy"></p>
 <p>설정값과 로그인 토큰은 현재 브라우저의 로컬 저장소에 보관됩니다. 공용 PC에서는 사용 후 <strong>Spotify 연결됨 → 연결 해제</strong>를 선택하세요.</p>
 <h2 id="spotify-연결">Spotify 연결</h2>
@@ -94,8 +98,8 @@
 <p>Album Deck은 Spotify의 원본 앨범이나 플레이리스트를 수정하지 않습니다. 재생할 수 없는 곡은 대기열에서 제외될 수 있으므로 녹음 전에 화면에 표시된 실제 곡 수를 확인하세요.</p>
 <p>아래 플레이어에서는 재생·일시정지, 이전/다음 곡, 재생 위치와 볼륨을 조절할 수 있습니다. 브라우저 플레이어의 <code>AAC · 256 kbps</code> 표시는 Spotify 웹 플레이어의 안내 규격이며, 현재 스트림을 직접 측정한 값은 아닙니다. 다른 Spotify Connect 장치의 실제 형식과 비트레이트는 확인할 수 없어 <code>확인 불가</code>로 표시됩니다.</p>
 <h2 id="minidisc-녹음-방법">MiniDisc 녹음 방법</h2>
-<h3 id="1-연결과-windows-출력-확인">1. 연결과 Windows 출력 확인</h3>
-<ol><li>PC의 광출력 또는 오디오 인터페이스 출력을 MD 레코더의 입력에 연결합니다.</li><li>Album Deck <strong>설정 → 재생 장치</strong>에서 <strong>이 브라우저 · Album Deck</strong>을 선택합니다.</li><li><strong>Windows 출력 설정 열기</strong>를 눌러 Edge 또는 Chrome의 출력을 MD 레코더에 연결된 장치로 지정합니다.</li><li>Spotify나 시스템 알림 등 다른 소리가 같은 출력으로 나가지 않도록 닫거나 다른 출력 장치로 옮깁니다.</li><li>짧은 곡으로 시험 재생해 MD 레코더의 입력 레벨과 좌우 채널을 확인합니다.</li></ol>
+<h3 id="1-연결과-오디오-출력-확인">1. 연결과 오디오 출력 확인</h3>
+<ol><li>PC의 광출력 또는 오디오 인터페이스 출력을 MD 레코더의 입력에 연결합니다.</li><li>Album Deck <strong>설정 → 재생 장치</strong>에서 <strong>이 브라우저 · Album Deck</strong>을 선택합니다.</li><li>Windows에서는 <strong>Windows 출력 설정 열기</strong>를 눌러 Edge 또는 Chrome의 출력을 MD 레코더에 연결된 장치로 지정합니다.</li><li>macOS에서는 <strong>시스템 설정 → 사운드 → 출력</strong>에서 MD 연결 장치를 선택합니다. macOS 기본 설정은 시스템 전체 출력을 바꾸므로 Safari만 별도로 지정하려면 앱별 오디오 라우팅 도구를 사용해야 합니다.</li><li>Spotify나 시스템 알림 등 다른 소리가 같은 출력으로 나가지 않도록 닫거나 다른 출력 장치로 옮깁니다.</li><li>짧은 곡으로 시험 재생해 MD 레코더의 입력 레벨과 좌우 채널을 확인합니다.</li></ol>
 <h3 id="2-곡간-무음-시험">2. 곡간 무음 시험</h3>
 <ol><li>MD 레코더의 자동 트랙 마크 기능을 켭니다.</li><li>Album Deck의 무음 길이를 우선 2~3초로 설정합니다.</li><li>두세 곡을 시험 녹음합니다.</li><li>MD에서 각 곡이 별도 트랙으로 나뉘었는지 확인합니다.</li><li>한 트랙으로 합쳐지면 무음 길이를 늘리고, 불필요하게 나뉘면 레코더의 트랙 마크 설정과 입력 레벨을 확인합니다.</li></ol>
 <h3 id="3-실제-녹음">3. 실제 녹음</h3>
@@ -107,7 +111,7 @@
 <p>각 파일에는 곡 제목, 아티스트, 앨범, 트랙 번호와 가능한 경우 발매 연도가 기록됩니다. MP3 길이와 Spotify 곡 길이의 차이가 10초를 넘으면 잘못된 대응을 막기 위해 그 파일을 건너뜁니다. 브라우저가 폴더 쓰기를 지원하지 않으면 원본을 덮어쓰는 대신 태그가 적용된 파일을 내려받습니다. 중요한 파일은 먼저 복사본으로 시험하세요.</p>
 <h2 id="자주-발생하는-문제">자주 발생하는 문제</h2>
 <h3 id="spotify-연결-후-재생되지-않음">Spotify 연결 후 재생되지 않음</h3>
-<ul><li>Spotify Premium 계정인지 확인합니다.</li><li>Developer Dashboard의 앱 사용자 목록에 로그인 계정이 등록되어 있는지 확인합니다.</li><li>Client ID와 Redirect URI를 다시 확인합니다.</li><li>최신 Edge 또는 Chrome에서 보호된 콘텐츠 재생(EME)이 허용되어 있는지 확인합니다.</li><li>Spotify 앱 등 다른 장치에서 잠깐 재생한 뒤 Album Deck 설정에서 장치 목록을 새로고침합니다.</li></ul>
+<ul><li>Spotify Premium 계정인지 확인합니다.</li><li>Developer Dashboard의 앱 사용자 목록에 로그인 계정이 등록되어 있는지 확인합니다.</li><li>Client ID와 Redirect URI를 다시 확인합니다.</li><li>최신 Safari, Edge 또는 Chrome에서 보호된 콘텐츠 재생(EME)이 허용되어 있는지 확인합니다.</li><li>Spotify 앱 등 다른 장치에서 잠깐 재생한 뒤 Album Deck 설정에서 장치 목록을 새로고침합니다.</li></ul>
 <h3 id="invalid-client-또는-redirect-uri-오류"><code>INVALID_CLIENT</code> 또는 Redirect URI 오류</h3>
 <ul><li>Dashboard와 Album Deck 양쪽 값이 정확히 같은지 확인합니다.</li><li>로컬 주소는 <code>http://127.0.0.1:8888/callback</code>을 사용합니다.</li><li><code>localhost</code>, 다른 포트, 대문자 차이, 추가된 끝 슬래시는 서로 다른 주소로 처리됩니다.</li></ul>
 <h3 id="플레이리스트가-보이지-않음">플레이리스트가 보이지 않음</h3>
