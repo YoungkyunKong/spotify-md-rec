@@ -160,7 +160,7 @@ This feature writes metadata from the selected Spotify album or playlist to MP3 
 5. Arrange filenames in natural numeric order (`01`, `02`, `03`, and so on). Album Deck matches this order to the Spotify track order.
 6. Select **태그 기록** (Write tags).
 
-Album Deck writes title, artist, album, track number, and the release year when available. A file is skipped when its duration differs from the Spotify track by more than 10 seconds. If the browser cannot write to the selected folder, it downloads a tagged copy instead of replacing the original. Test with copies of important files first.
+Album Deck writes the title, artist, album, original album track number, disc number, and release year when available. When tagging a playlist, it uses each song's position on its source album instead of its playlist position. A file is skipped when its duration differs from the Spotify track by more than 10 seconds. If the browser cannot write to the selected folder, it downloads a tagged copy instead of replacing the original. Test with copies of important files first.
 
 ## Troubleshooting
 

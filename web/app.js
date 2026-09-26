@@ -978,21 +978,45 @@ async function contextTracks(contextUri) {
   const match = /^spotify:(album|playlist):([A-Za-z0-9]+)$/.exec(contextUri || "");
   if (!match) throw new Error("지원하지 않는 Spotify 재생 주소입니다.");
   const [, type, id] = match;
-  const rows = type === "album"
-    ? await pages(`/albums/${id}/tracks?limit=50`, "items")
-    : await pages(`/playlists/${id}/items?limit=50&additional_types=track`, "items");
-  return rows
+  let albumContext = null;
+  let rows;
+  if (type === "album") {
+    [albumContext, rows] = await Promise.all([
+      spotifyApi(`/albums/${id}`),
+      pages(`/albums/${id}/tracks?limit=50`, "items"),
+    ]);
+  } else {
+    rows = await pages(`/playlists/${id}/items?limit=50&additional_types=track`, "items");
+  }
+  const tracks = rows
     .map((row) => row?.item || row?.track || row)
-    .filter((track) => track?.type === "track" && track.uri)
-    .map((track) => ({
+    .filter((track) => track?.type === "track" && track.uri);
+  const discTrackTotals = new Map();
+  if (type === "album") {
+    for (const track of tracks) {
+      const discNumber = Number(track.disc_number) || 1;
+      discTrackTotals.set(discNumber, Math.max(discTrackTotals.get(discNumber) || 0, Number(track.track_number) || 0));
+    }
+  }
+  const discTotal = type === "album" ? new Set(tracks.map((track) => Number(track.disc_number) || 1)).size : null;
+  return tracks.map((track) => {
+    const discNumber = Number(track.disc_number) || 1;
+    return {
       uri: track.uri,
       name: track.name || "제목 없음",
       artist: (track.artists || []).map((artist) => artist.name).filter(Boolean).join(", "),
       duration_ms: track.duration_ms || 0,
-      album: track.album?.name || "",
-      release_date: track.album?.release_date || "",
+      album: track.album?.name || albumContext?.name || "",
+      release_date: track.album?.release_date || albumContext?.release_date || "",
+      track_number: Number(track.track_number) || null,
+      track_total: type === "album"
+        ? discTrackTotals.get(discNumber) || Number(albumContext?.total_tracks) || null
+        : Number(track.album?.total_tracks) || null,
+      disc_number: discNumber,
+      disc_total: discTotal,
       playable: !track.is_local && track.is_playable !== false,
-    }));
+    };
+  });
 }
 
 async function searchAlbums(query) {
@@ -1393,12 +1417,15 @@ function syncSafe(value) {
 }
 
 function id3TagFor(track, index, total) {
+  const trackNumber = Number(track.track_number) || index + 1;
+  const trackTotal = Number(track.track_total) || total;
   const frames = [
     utf16Frame("TIT2", track.name),
     utf16Frame("TPE1", track.artist),
     utf16Frame("TALB", track.album || queueContextLabel),
-    utf16Frame("TRCK", `${index + 1}/${total}`),
+    utf16Frame("TRCK", `${trackNumber}/${trackTotal}`),
   ];
+  if (track.disc_number) frames.push(utf16Frame("TPOS", track.disc_total ? `${track.disc_number}/${track.disc_total}` : String(track.disc_number)));
   if (track.release_date) frames.push(utf16Frame("TYER", track.release_date.slice(0, 4)));
   const bodyLength = frames.reduce((sum, frame) => sum + frame.length, 0);
   const tag = new Uint8Array(10 + bodyLength);
