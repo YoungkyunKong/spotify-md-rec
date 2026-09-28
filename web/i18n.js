@@ -294,7 +294,7 @@ const messages = {
   },
   en: {
     "language.label": "Language",
-    "language.toggle": "한국어",
+    "language.toggle": "KO",
     "language.toggleTitle": "한국어로 전환",
     "language.help": "The language used for the Album Deck interface.",
 
