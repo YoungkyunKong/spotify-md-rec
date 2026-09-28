@@ -45,7 +45,7 @@ const dom = {
   queueTitle: $("#contextQueueTitle"), queueCount: $("#contextQueueCount"), queueList: $("#contextTrackList"),
   tagEditor: $("#tagEditorButton"), tagDialog: $("#tagDialog"), chooseTagFiles: $("#chooseTagFiles"),
   tagFileInput: $("#tagFileInput"), tagFileSummary: $("#tagFileSummary"), tagProgress: $("#tagProgress"),
-  tagCancel: $("#tagCancel"), applyTags: $("#applyTags"),
+  tagCancel: $("#tagCancel"), applyTags: $("#applyTags"), mdTransfer: $("#mdTransferButton"),
 };
 
 let token = readSession();
@@ -1007,6 +1007,7 @@ async function contextTracks(contextUri) {
       artist: (track.artists || []).map((artist) => artist.name).filter(Boolean).join(", "),
       duration_ms: track.duration_ms || 0,
       album: track.album?.name || albumContext?.name || "",
+      album_artist: (track.album?.artists || albumContext?.artists || []).map((artist) => artist.name).filter(Boolean).join(", "),
       release_date: track.album?.release_date || albumContext?.release_date || "",
       track_number: Number(track.track_number) || null,
       track_total: type === "album"
@@ -1292,6 +1293,7 @@ dom.volume.addEventListener("input", () => {
   volumeTimer = window.setTimeout(() => setPlaybackVolume(Number(dom.volume.value)).catch((error) => showToast(error.message, "error")), usesBrowserPlayer() ? 0 : 220);
 });
 dom.tagEditor.addEventListener("click", () => openTagDialog());
+dom.mdTransfer.addEventListener("click", () => openMdTransfer().catch((error) => showToast(error.message, "error", 7000)));
 dom.tagCancel.addEventListener("click", () => dom.tagDialog.close());
 dom.chooseTagFiles.addEventListener("click", () => chooseTagFiles().catch((error) => showToast(error.message, "error", 7000)));
 dom.tagFileInput.addEventListener("change", () => {
@@ -1318,6 +1320,16 @@ async function boot() {
     showToast(error.message, "error", 7000);
     if (/401|인증이 만료|invalid_grant/i.test(error.message)) clearSession();
   }
+}
+
+async function openMdTransfer() {
+  const { openMdTransferDialog } = await import("/md-transfer.js");
+  openMdTransferDialog({
+    tracks: tagTracks.length ? tagTracks : queueTracks,
+    contextLabel: queueContextLabel,
+    id3TagFor,
+    showToast,
+  });
 }
 
 function openTagDialog() {
@@ -1425,6 +1437,7 @@ function id3TagFor(track, index, total) {
     utf16Frame("TALB", track.album || queueContextLabel),
     utf16Frame("TRCK", `${trackNumber}/${trackTotal}`),
   ];
+  if (track.album_artist) frames.push(utf16Frame("TPE2", track.album_artist));
   if (track.disc_number) frames.push(utf16Frame("TPOS", track.disc_total ? `${track.disc_number}/${track.disc_total}` : String(track.disc_number)));
   if (track.release_date) frames.push(utf16Frame("TYER", track.release_date.slice(0, 4)));
   const bodyLength = frames.reduce((sum, frame) => sum + frame.length, 0);

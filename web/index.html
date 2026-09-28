@@ -50,6 +50,9 @@
         <header class="topbar">
           <div class="breadcrumbs"><span>YOUR LIBRARY</span><b>/</b><strong id="crumbCurrent">앨범 찾기</strong></div>
           <div class="top-actions">
+            <button class="settings-button md-button" id="mdTransferButton" type="button" title="MD에 기록된 곡을 PC로 가져와 MP3로 저장">
+              <span class="md-glyph" aria-hidden="true"></span><span class="settings-button-label">MD 가져오기</span>
+            </button>
             <button class="settings-button help-button" id="helpButton" type="button" title="Album Deck 사용설명서">
               <span class="help-glyph" aria-hidden="true">?</span><span class="help-button-label">도움말</span>
             </button>
@@ -258,6 +261,55 @@
       <div class="dialog-actions">
         <button class="quiet-button" id="tagCancel" type="button">닫기</button>
         <button class="connect-button" id="applyTags" type="button" disabled>태그 기록</button>
+      </div>
+    </dialog>
+    <dialog class="account-dialog md-dialog" id="mdDialog">
+      <div class="settings-heading"><div class="dialog-mark">◎</div><span>MINIDISC TRANSFER</span></div>
+      <h2>MD에서 가져오기</h2>
+      <p>MD에 기록된 곡을 PC로 내려받아 WAV로 변환하고, MP3로 인코딩한 뒤 ID3 태그를 기록해 저장합니다.</p>
+      <div class="md-connect-row">
+        <button class="connect-button" id="mdConnectNetmd" type="button">NetMD 기기 연결</button>
+        <button class="quiet-button" id="mdOpenHimd" type="button">Hi-MD 드라이브 열기</button>
+      </div>
+      <details class="md-support-help">
+        <summary>지원 기기 안내</summary>
+        <ul>
+          <li><strong>NetMD (일반 MD 디스크)</strong>: USB로 곡을 PC에 보내는 기능은 Sony MZ-RH1 / MZ-M200만 지원합니다. 다른 NetMD 기기는 연결 후 곡 목록만 확인할 수 있습니다.</li>
+          <li><strong>Hi-MD (Hi-MD 포맷 디스크)</strong>: Hi-MD 모드로 연결해 드라이브로 나타나는 모든 Hi-MD 기기를 지원합니다. 드라이브 최상위(HMDHIFI 폴더가 있는 위치)를 선택하세요.</li>
+          <li>WebUSB와 폴더 접근을 지원하는 Chrome 또는 Edge가 필요합니다. Safari와 Firefox는 지원하지 않습니다.</li>
+        </ul>
+      </details>
+      <div class="md-device" id="mdDevice" hidden>
+        <strong id="mdDeviceName"></strong>
+        <span class="md-support" id="mdDeviceSupport"></span>
+        <span class="md-disc-info" id="mdDiscInfo"></span>
+      </div>
+      <p class="md-context-note" id="mdContextNote"></p>
+      <div class="md-track-toolbar" id="mdTrackToolbar" hidden>
+        <label><input type="checkbox" id="mdSelectAll" /> 전체 선택</label>
+        <span id="mdSelectionCount"></span>
+      </div>
+      <div class="md-track-list" id="mdTrackList"></div>
+      <fieldset class="md-options">
+        <legend>변환 옵션</legend>
+        <label class="md-option"><input type="checkbox" id="mdTrimOption" checked /><span><strong>원곡 길이에 맞춰 앞부분만 저장</strong><small>MP3 변환 후 매칭한 Spotify 곡 길이만큼 앞부분만 남기고 뒤쪽 무음을 잘라 냅니다.</small></span></label>
+        <label class="md-option"><input type="checkbox" id="mdAlbumFolderOption" checked /><span><strong>앨범별 폴더로 분리 저장</strong><small>ID3 태그의 “아티스트 - 앨범” 이름으로 하위 폴더를 만들어 저장합니다.</small></span></label>
+        <label class="md-option"><input type="checkbox" id="mdKeepWavOption" /><span><strong>WAV 파일도 함께 저장</strong><small>MD에서 내려받아 변환한 원본 길이의 WAV를 MP3 옆에 남깁니다.</small></span></label>
+        <div class="md-bitrate">
+          <label for="mdBitrate">MP3 품질</label>
+          <select id="mdBitrate">
+            <option value="320k">320 kbps (CBR)</option>
+            <option value="256k">256 kbps (CBR)</option>
+            <option value="192k">192 kbps (CBR)</option>
+            <option value="v0">VBR V0 (~245 kbps)</option>
+          </select>
+        </div>
+      </fieldset>
+      <div class="tag-picker-row"><button class="quiet-button" id="mdChooseFolder" type="button">저장 폴더 선택</button><span id="mdFolderSummary">선택된 폴더 없음</span></div>
+      <div class="tag-progress" id="mdProgress" hidden></div>
+      <div class="dialog-actions">
+        <button class="quiet-button" id="mdClose" type="button">닫기</button>
+        <button class="connect-button" id="mdStart" type="button" disabled>다운로드 시작</button>
       </div>
     </dialog>
   </body>
