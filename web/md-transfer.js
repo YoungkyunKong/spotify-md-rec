@@ -1,6 +1,8 @@
 // MiniDisc → PC transfer: download tracks from NetMD (netmd-js) or Hi-MD (himd-js) media,
 // decode them to WAV, convert to MP3 with ffmpeg.wasm, write ID3 tags and save them to a folder.
 
+import { t } from "/i18n.js";
+
 const MD_LIB_URL = "/vendor/md-lib.js";
 const FFMPEG_URL = "/vendor/ffmpeg/index.js";
 const FFMPEG_CORE_BASE = globalThis.ALBUM_DECK_FFMPEG_CORE_BASE || "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm";
@@ -32,7 +34,7 @@ const el = {};
 function loadMdLib() {
   mdLibPromise ||= import(MD_LIB_URL).catch((error) => {
     mdLibPromise = null;
-    throw new Error(`MD 라이브러리를 불러오지 못했습니다: ${error.message}`);
+    throw new Error(t("md.libLoadFailed", { error: error.message }));
   });
   return mdLibPromise;
 }
@@ -45,7 +47,7 @@ export function loadFfmpeg() {
     return ffmpeg;
   })().catch((error) => {
     ffmpegPromise = null;
-    throw new Error(`오디오 변환기(ffmpeg.wasm)를 불러오지 못했습니다. 인터넷 연결을 확인하세요. (${error.message})`);
+    throw new Error(t("md.ffmpegLoadFailed", { error: error.message }));
   });
   return ffmpegPromise;
 }
@@ -95,7 +97,7 @@ function currentOptions() {
 // Sources
 
 async function connectNetmd() {
-  if (!navigator.usb) throw new Error("이 브라우저는 WebUSB를 지원하지 않습니다. Chrome 또는 Edge에서 Album Deck을 열어 주세요.");
+  if (!navigator.usb) throw new Error(t("md.noWebUsb"));
   const md = await loadMdLib();
   const iface = await md.openNewDevice(navigator.usb);
   if (!iface) return null;
@@ -119,8 +121,8 @@ async function connectNetmd() {
     discTitle: disc.title || disc.fullWidthTitle || "",
     canDownload: Boolean(supported),
     supportNote: supported
-      ? "다운로드 지원 기기"
-      : "이 NetMD 기기는 PC로 곡을 보내는 기능을 지원하지 않습니다. NetMD 다운로드는 Sony MZ-RH1 / MZ-M200에서만 가능합니다.",
+      ? t("md.netmdSupported")
+      : t("md.netmdUnsupported"),
     tracks,
     async dump(track, onProgress) {
       const [format, data] = await md.upload(iface, track.index, ({ readBytes, totalBytes }) => onProgress(totalBytes ? readBytes / totalBytes : 0));
@@ -134,14 +136,14 @@ async function connectNetmd() {
 }
 
 async function openHimd() {
-  if (typeof window.showDirectoryPicker !== "function") throw new Error("이 브라우저는 폴더 접근(File System Access API)을 지원하지 않습니다. Chrome 또는 Edge를 사용하세요.");
+  if (typeof window.showDirectoryPicker !== "function") throw new Error(t("md.noFsAccess"));
   const md = await loadMdLib();
   let fs;
   try {
     fs = await md.FSAHiMDFilesystem.init(true, true);
   } catch (error) {
     if (error?.name === "AbortError") return null;
-    throw new Error("선택한 폴더가 Hi-MD 디스크가 아닙니다. Hi-MD 기기의 드라이브 최상위(HMDHIFI 폴더가 있는 위치)를 선택하세요.");
+    throw new Error(t("md.notHimd"));
   }
   const himd = await md.HiMD.init(fs);
   const tracks = md.getAllTracks(himd).map((track) => ({
@@ -155,10 +157,10 @@ async function openHimd() {
   return {
     kind: "himd",
     label: "Hi-MD",
-    deviceName: `드라이브 ${fs.getName?.() || "HMDHIFI"}`,
+    deviceName: t("md.drive", { name: fs.getName?.() || "HMDHIFI" }),
     discTitle: himd.getDiscTitle() || "",
     canDownload: true,
-    supportNote: "다운로드 지원 (Hi-MD 모드)",
+    supportNote: t("md.himdSupported"),
     tracks,
     async dump(track, onProgress) {
       const slot = himd.trackIndexToTrackSlot(track.index);
@@ -280,22 +282,22 @@ export async function convertTrack(ffmpeg, { data, ext }, { targetMs = 0, bitrat
   };
   const run = async (args, stage) => {
     const code = await ffmpeg.exec(args);
-    if (code !== 0) throw new Error(`${stage} 실패 (ffmpeg ${code})`);
+    if (code !== 0) throw new Error(t("md.stageFailed", { stage, code }));
   };
   try {
     await ffmpeg.writeFile(input, data);
     let wavData = null;
     if (ext !== "mp3" || keepWav) {
-      onStage("WAV 변환");
-      await run(["-hide_banner", "-y", "-i", input, "-vn", "-map_metadata", "-1", "-c:a", "pcm_s16le", wav], "WAV 변환");
+      onStage(t("md.stageWav"));
+      await run(["-hide_banner", "-y", "-i", input, "-vn", "-map_metadata", "-1", "-c:a", "pcm_s16le", wav], t("md.stageWav"));
       if (keepWav) wavData = await ffmpeg.readFile(wav);
     }
-    onStage("MP3 변환");
+    onStage(t("md.stageMp3"));
     if (ext === "mp3") {
       // Hi-MD MP3 tracks are already MP3; copy the frames instead of re-encoding.
-      await run(["-hide_banner", "-y", "-i", input, ...trim, "-vn", "-map_metadata", "-1", "-c:a", "copy", "-id3v2_version", "0", "-write_id3v1", "0", mp3], "MP3 변환");
+      await run(["-hide_banner", "-y", "-i", input, ...trim, "-vn", "-map_metadata", "-1", "-c:a", "copy", "-id3v2_version", "0", "-write_id3v1", "0", mp3], t("md.stageMp3"));
     } else {
-      await run(["-hide_banner", "-y", "-i", wav, ...trim, "-c:a", "libmp3lame", ...mp3QualityArgs(bitrate), "-id3v2_version", "0", "-write_id3v1", "0", mp3], "MP3 변환");
+      await run(["-hide_banner", "-y", "-i", wav, ...trim, "-c:a", "libmp3lame", ...mp3QualityArgs(bitrate), "-id3v2_version", "0", "-write_id3v1", "0", mp3], t("md.stageMp3"));
     }
     const mp3Data = await ffmpeg.readFile(mp3);
     return { mp3: mp3Data, wav: wavData };
@@ -340,7 +342,7 @@ function bind() {
   }));
   el.start.addEventListener("click", () => runTransfer().catch((error) => {
     ctx.showToast(error.message, "error", 9000);
-    log(`오류 · ${error.message}`);
+    log(t("md.error", { error: error.message }));
   }).finally(() => { running = false; updateSelection(); }));
   el.close.addEventListener("click", () => el.dialog.close());
   el.dialog.addEventListener("cancel", (event) => { if (running) event.preventDefault(); });
@@ -352,8 +354,8 @@ export function openMdTransferDialog(context) {
   el.progress.hidden = true;
   el.progress.textContent = "";
   el.contextNote.textContent = ctx.tracks.length
-    ? `태그 정보: ${ctx.contextLabel} (${ctx.tracks.length}곡). 곡마다 매칭할 Spotify 곡을 바꿀 수 있습니다.`
-    : "Spotify 앨범/플레이리스트를 선택하지 않아 MD에 기록된 제목으로 태그를 기록합니다. 원곡 길이 맞춤은 Spotify 곡과 매칭된 곡에만 적용됩니다.";
+    ? t("md.contextNote", { label: ctx.contextLabel, count: ctx.tracks.length })
+    : t("md.contextNoteNone");
   if (source) renderTracks();
   updateSelection();
   el.dialog.showModal();
@@ -393,14 +395,14 @@ function renderTracks() {
   el.deviceName.textContent = `${source.label} · ${source.deviceName}`;
   el.deviceSupport.textContent = source.canDownload ? `✓ ${source.supportNote}` : `✕ ${source.supportNote}`;
   el.deviceSupport.classList.toggle("unsupported", !source.canDownload);
-  el.discInfo.textContent = `${source.discTitle ? `“${source.discTitle}” · ` : ""}${mdTracks.length}곡`;
+  el.discInfo.textContent = `${source.discTitle ? `“${source.discTitle}” · ` : ""}${t("md.discTracks", { count: mdTracks.length })}`;
   el.toolbar.hidden = !mdTracks.length;
   el.selectAll.checked = source.canDownload;
   el.trackList.replaceChildren();
   selectionAnchor = 0;
   selectionCursor = 0;
   if (!mdTracks.length) {
-    el.trackList.append(make("div", "md-empty", "디스크에 기록된 곡이 없습니다."));
+    el.trackList.append(make("div", "md-empty", t("md.noTracks")));
     return;
   }
   const matches = defaultMatches(mdTracks, ctx.tracks);
@@ -413,18 +415,18 @@ function renderTracks() {
     box.disabled = !source.canDownload;
     box.dataset.position = String(position);
     box.tabIndex = -1;
-    box.setAttribute("aria-label", `${track.index + 1}번 곡 선택`);
+    box.setAttribute("aria-label", t("md.selectTrackAria", { number: track.index + 1 }));
     const copy = make("span", "md-track-copy");
     copy.append(
-      make("strong", "", track.title || "(제목 없음)"),
+      make("strong", "", track.title || t("md.untitled")),
       make("span", "", [track.artist, track.album].filter(Boolean).join(" · ")),
     );
     row.append(box, make("span", "md-track-number", String(track.index + 1).padStart(2, "0")), copy,
       make("span", "md-track-codec", track.codec), make("span", "md-track-duration", timeLabel(track.durationMs)));
     const select = make("select", "md-track-match");
     select.dataset.position = String(position);
-    select.setAttribute("aria-label", `${track.index + 1}번 곡에 사용할 태그 정보`);
-    select.append(new Option("MD 정보 사용", "-1"));
+    select.setAttribute("aria-label", t("md.matchAria", { number: track.index + 1 }));
+    select.append(new Option(t("md.useMdInfo"), "-1"));
     ctx.tracks.forEach((candidate, index) => select.append(new Option(`${String(index + 1).padStart(2, "0")}. ${candidate.name} (${timeLabel(candidate.duration_ms)})`, String(index))));
     select.value = String(matches[position]);
     select.disabled = !ctx.tracks.length;
@@ -525,7 +527,7 @@ function selectedRows() {
 function updateSelection() {
   if (!bound) return;
   const count = source ? selectedRows().length : 0;
-  el.selectionCount.textContent = source ? `${count}/${mdTracks.length}곡 선택` : "";
+  el.selectionCount.textContent = source ? t("md.selectionCount", { count, total: mdTracks.length }) : "";
   if (source && mdTracks.length) {
     el.selectAll.checked = count === mdTracks.length;
     el.selectAll.indeterminate = count > 0 && count < mdTracks.length;
@@ -536,7 +538,7 @@ function updateSelection() {
       row.setAttribute("aria-selected", String(row.querySelector(".md-track-check").checked));
     });
   }
-  el.folderSummary.textContent = outputDirectory ? `저장 위치: ${outputDirectory.name}` : "선택된 폴더 없음";
+  el.folderSummary.textContent = outputDirectory ? t("md.folder", { name: outputDirectory.name }) : t("md.noFolder");
   el.start.disabled = running || !count || !outputDirectory || !source?.canDownload;
   el.connectNetmd.disabled = running;
   el.openHimd.disabled = running;
@@ -545,7 +547,7 @@ function updateSelection() {
 }
 
 async function chooseOutputDirectory() {
-  if (typeof window.showDirectoryPicker !== "function") throw new Error("이 브라우저는 저장 폴더 선택을 지원하지 않습니다. Chrome 또는 Edge를 사용하세요.");
+  if (typeof window.showDirectoryPicker !== "function") throw new Error(t("md.noFolderSupport"));
   outputDirectory = await window.showDirectoryPicker({ mode: "readwrite", id: "album-deck-md-output", startIn: "music" });
   updateSelection();
 }
@@ -566,27 +568,27 @@ function setStatus(line) {
 async function runTransfer() {
   const rows = selectedRows();
   if (!rows.length || !outputDirectory || !source?.canDownload) return;
-  if (await outputDirectory.requestPermission?.({ mode: "readwrite" }) === "denied") throw new Error("저장 폴더에 쓸 권한이 없습니다.");
+  if (await outputDirectory.requestPermission?.({ mode: "readwrite" }) === "denied") throw new Error(t("md.noWritePermission"));
   running = true;
   updateSelection();
   const options = currentOptions();
   el.progress.textContent = "";
-  log("오디오 변환기를 준비하는 중…");
+  log(t("md.preparing"));
   const ffmpeg = await loadFfmpeg();
-  setStatus("오디오 변환기 준비 완료");
+  setStatus(t("md.prepared"));
   let done = 0;
   for (const [position, { track, spotifyIndex }] of rows.entries()) {
-    const label = `${position + 1}/${rows.length} · ${String(track.index + 1).padStart(2, "0")} ${track.title || "(제목 없음)"}`;
-    log(`${label} · 다운로드 0%`);
+    const label = `${position + 1}/${rows.length} · ${String(track.index + 1).padStart(2, "0")} ${track.title || t("md.untitled")}`;
+    log(t("md.downloading", { label, percent: 0 }));
     try {
       const meta = metadataFor(track, spotifyIndex);
-      const dumped = await source.dump(track, (ratio) => setStatus(`${label} · 다운로드 ${Math.round(ratio * 100)}%`));
+      const dumped = await source.dump(track, (ratio) => setStatus(t("md.downloading", { label, percent: Math.round(ratio * 100) })));
       let targetMs = 0;
       let trimNote = "";
       if (options.trim) {
-        if (!meta.targetMs) trimNote = " · 길이 맞춤 건너뜀(Spotify 매칭 없음)";
-        else if (track.durationMs - meta.targetMs > TRIM_MISMATCH_LIMIT_MS) trimNote = ` · 길이 맞춤 건너뜀(MD가 원곡보다 ${Math.round((track.durationMs - meta.targetMs) / 1000)}초 김, 매칭 확인 필요)`;
-        else { targetMs = meta.targetMs; trimNote = ` · ${timeLabel(targetMs)}로 맞춤`; }
+        if (!meta.targetMs) trimNote = t("md.trimNoMatch");
+        else if (track.durationMs - meta.targetMs > TRIM_MISMATCH_LIMIT_MS) trimNote = t("md.trimMismatch", { seconds: Math.round((track.durationMs - meta.targetMs) / 1000) });
+        else { targetMs = meta.targetMs; trimNote = t("md.trimmed", { time: timeLabel(targetMs) }); }
       }
       const { mp3, wav } = await convertTrack(ffmpeg, dumped, {
         targetMs,
@@ -594,7 +596,7 @@ async function runTransfer() {
         keepWav: options.keepWav,
         onStage: (stage) => setStatus(`${label} · ${stage}`),
       });
-      setStatus(`${label} · 태그 기록`);
+      setStatus(`${label} · ${t("md.stageTag")}`);
       const tag = ctx.id3TagFor(meta.tag, meta.index, meta.total);
       const directory = options.albumFolders
         ? await outputDirectory.getDirectoryHandle(albumFolderName(meta.tag), { create: true })
@@ -603,12 +605,12 @@ async function runTransfer() {
       await writeFile(directory, `${base}.mp3`, new Blob([tag, mp3], { type: "audio/mpeg" }));
       if (wav) await writeFile(directory, `${base}.wav`, new Blob([wav], { type: "audio/wav" }));
       const where = options.albumFolders ? `${albumFolderName(meta.tag)}/` : "";
-      setStatus(`완료 · ${where}${base}.mp3${wav ? " (+WAV)" : ""}${trimNote}`);
+      setStatus(t("md.trackDone", { path: `${where}${base}.mp3${wav ? " (+WAV)" : ""}${trimNote}` }));
       done++;
     } catch (error) {
-      setStatus(`실패 · ${label} (${error.message})`);
+      setStatus(t("md.trackFailed", { label, error: error.message }));
     }
   }
-  log(`${done}/${rows.length}곡 저장 완료`);
-  ctx.showToast(`${done}곡을 MP3로 저장했습니다.`, done === rows.length ? "success" : "warning", 7000);
+  log(t("md.finished", { done, total: rows.length }));
+  ctx.showToast(t("md.finishedToast", { count: done }), done === rows.length ? "success" : "warning", 7000);
 }

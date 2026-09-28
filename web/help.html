@@ -62,7 +62,7 @@
 <p>Album Deck은 Spotify 앨범과 플레이리스트를 한 곡씩 재생하고, 곡 사이에 지정한 무음 시간을 넣어 MiniDisc 녹음을 돕는 개인용 웹 플레이어입니다. Spotify 음원을 내려받거나 저장하지 않으며, 브라우저에서 Spotify Web Playback SDK와 Web API를 직접 사용합니다.</p>
 <p><img src="docs/images/home.jpg" alt="Album Deck 초기 화면" loading="lazy"></p>
 <h2 id="주요-기능">주요 기능</h2>
-<ul><li>앨범명 또는 아티스트 검색 후 앨범 전체 순서 재생</li><li>사용자의 Spotify 플레이리스트 조회 및 순서 재생</li><li>곡 사이에 0~30초의 무음 삽입(0.5초 단위)</li><li>Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치 선택</li><li>Windows 앱별 출력과 macOS 시스템 출력 설정 안내</li><li>프로그램의 <strong>도움말</strong> 버튼에서 한글·영문 전체 사용설명서 열기</li><li>선택한 Spotify 곡 정보로 MP3 파일의 ID3 태그 기록</li><li>MD에 녹음한 곡을 USB로 가져와 WAV·MP3 변환, ID3 태그 기록, 앨범별 폴더 저장까지 자동 처리</li><li>Windows 설치 스크립트, npm 실행, Vercel 및 일반 Node.js 배포 지원</li></ul>
+<ul><li>앨범명 또는 아티스트 검색 후 앨범 전체 순서 재생</li><li>사용자의 Spotify 플레이리스트 조회 및 순서 재생</li><li>곡 사이에 0~30초의 무음 삽입(0.5초 단위)</li><li>Album Deck 브라우저 플레이어 또는 다른 Spotify Connect 장치 선택</li><li>Windows 앱별 출력과 macOS 시스템 출력 설정 안내</li><li>프로그램의 <strong>도움말</strong> 버튼에서 한글·영문 전체 사용설명서 열기</li><li>선택한 Spotify 곡 정보로 MP3 파일의 ID3 태그 기록</li><li>MD에 녹음한 곡을 USB로 가져와 WAV·MP3 변환, ID3 태그 기록, 앨범별 폴더 저장까지 자동 처리</li><li>한국어·영어 화면 선택</li><li>Windows 설치 스크립트, npm 실행, Vercel 및 일반 Node.js 배포 지원</li></ul>
 <h2 id="준비물">준비물</h2>
 <ul><li>Windows 10/11, macOS 또는 Node.js를 실행할 수 있는 환경</li><li>Node.js 20 이상(Windows 배포 ZIP의 설치 스크립트는 필요하면 자동 설치)</li><li>Spotify Premium 계정</li><li>사용자가 만든 Spotify Developer 앱의 Client ID</li><li>광출력 또는 아날로그 출력으로 녹음할 경우 PC와 MD 레코더를 연결할 오디오 케이블</li></ul>
 <p>Spotify 앱이 개발 모드라면 실제로 로그인할 Spotify 계정을 Developer Dashboard의 사용자 목록에 등록해야 합니다. Client Secret은 입력하거나 배포하지 않습니다.</p>
@@ -85,6 +85,8 @@
 <p>바탕 화면의 <strong>Album Deck</strong>을 실행하거나 <code>npm start</code> 후 <a href="http://127.0.0.1:8888">http://127.0.0.1:8888</a>을 엽니다.</p>
 <ol><li>화면 위쪽의 <strong>설정</strong>을 누릅니다.</li><li><strong>Client ID</strong>에 Spotify Dashboard에서 복사한 값을 붙여 넣습니다.</li><li><strong>Redirect URI</strong>가 <code>http://127.0.0.1:8888/callback</code>인지 확인합니다.</li><li>다음 실행에 사용할 기본 브라우저를 고릅니다. Windows에서는 Edge 또는 Chrome을, macOS에서는 Safari를 기본으로 사용합니다.</li><li><strong>재생 장치</strong>에서 다음 중 하나를 고릅니다.<ul><li><strong>이 브라우저 · Album Deck</strong>: 현재 PC에서 소리를 출력합니다. MD 녹음에는 보통 이 항목을 사용합니다.</li><li>다른 Spotify Connect 장치: 목록에 표시된 별도 장치에서 재생합니다.</li></ul></li><li><strong>무음 길이</strong>를 정합니다. MD가 곡 경계를 안정적으로 인식하는 값은 레코더와 연결 방식에 따라 다르므로 먼저 2~3초로 시험하는 것을 권장합니다.</li><li><strong>저장</strong>을 누릅니다.</li></ol>
 <p><img src="docs/images/settings.jpg" alt="Album Deck 설정 화면" loading="lazy"></p>
+<h3 id="화면-언어-선택">화면 언어 선택</h3>
+<p>Album Deck은 한국어와 영어 화면을 제공합니다. 처음 실행하면 브라우저 언어가 한국어일 때 한국어로, 그 밖에는 영어로 표시됩니다. 화면 위쪽의 <strong>EN</strong> / <strong>한국어</strong> 버튼을 누르거나 <strong>설정 → 언어</strong>에서 바로 바꿀 수 있으며, 선택한 언어는 다음 실행에도 유지됩니다. <strong>도움말</strong>도 선택한 언어의 사용설명서를 엽니다.</p>
 <p>설정값과 로그인 토큰은 현재 브라우저의 로컬 저장소에 보관됩니다. 공용 PC에서는 사용 후 <strong>Spotify 연결됨 → 연결 해제</strong>를 선택하세요.</p>
 <h2 id="spotify-연결">Spotify 연결</h2>
 <ol><li>오른쪽 위의 <strong>Spotify 연결</strong>을 누릅니다.</li><li>Spotify 로그인 및 권한 화면에서 사용할 Premium 계정을 선택합니다.</li><li>승인이 끝나면 Album Deck으로 자동 복귀합니다.</li><li>버튼이 <strong>Spotify 연결됨</strong>으로 바뀌고 플레이리스트가 표시되는지 확인합니다.</li></ol>
