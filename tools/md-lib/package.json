@@ -1,0 +1,21 @@
+{
+  "name": "album-deck-md-lib",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Builds the browser bundles used by Album Deck's MiniDisc download feature",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "buffer": "^5.7.1",
+    "esbuild": "^0.25.0",
+    "events": "^3.3.0",
+    "himd-js": "0.2.13",
+    "netmd-js": "4.4.1",
+    "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
+    "string_decoder": "^1.3.0"
+  }
+}

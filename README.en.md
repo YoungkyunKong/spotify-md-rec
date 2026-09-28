@@ -15,6 +15,7 @@ Album Deck is a personal Spotify web player designed for MiniDisc recording. It 
 - Show platform-specific guidance for Windows per-app output and macOS system output
 - Open the complete Korean or English guide from the in-app **Help** button
 - Write Spotify metadata to ID3 tags in existing MP3 files
+- Download tracks recorded on a MiniDisc over USB, then convert them to WAV and MP3, tag them, and sort them into album folders
 - Run through the Windows installer, npm, Vercel, or a general Node.js host
 
 ## Requirements
@@ -162,6 +163,36 @@ This feature writes metadata from the selected Spotify album or playlist to MP3 
 
 Album Deck writes the title, artist, album, original album track number, disc number, and release year when available. When tagging a playlist, it uses each song's position on its source album instead of its playlist position. A file is skipped when its duration differs from the Spotify track by more than 10 seconds. If the browser cannot write to the selected folder, it downloads a tagged copy instead of replacing the original. Test with copies of important files first.
 
+## Import MiniDisc recordings as MP3 files
+
+Album Deck can download tracks recorded on a MiniDisc over USB, decode them to WAV, encode MP3 files, write ID3 tags, and save the results. MD access uses [netmd-js](https://github.com/cybercase/netmd-js) and [himd-js](https://github.com/asivery/himd-js), the libraries behind [Web MiniDisc Pro](https://github.com/asivery/webminidisc). Audio conversion uses [ffmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm).
+
+### Supported devices and browsers
+
+| Media | Connection | Download support |
+| --- | --- | --- |
+| Standard MD (SP, LP2, LP4) | **NetMD 기기 연결** (Connect NetMD device, WebUSB) | Sony MZ-RH1 / MZ-M200 only. Other NetMD devices can connect and list tracks, but download stays disabled. |
+| Hi-MD formatted disc (PCM, ATRAC3, ATRAC3plus, MP3) | **Hi-MD 드라이브 열기** (Open Hi-MD drive, folder access) | Every Hi-MD device connected in Hi-MD mode that appears as a drive. |
+
+- Use **Chrome or Edge**, which provide WebUSB and the File System Access API. Safari and Firefox are not supported.
+- The first conversion downloads ffmpeg.wasm (about 30 MB) from jsDelivr, so an internet connection is required.
+
+### Import tracks
+
+1. Optionally select the Spotify album or playlist to use for tags. Without one, Album Deck uses the title, artist, album, and disc title stored on the MD.
+2. Select **MD 가져오기** (Import from MD) at the top of the app.
+3. For a standard MD, select **NetMD 기기 연결** and choose the device. For a Hi-MD disc, select **Hi-MD 드라이브 열기** and choose the drive root that contains the `HMDHIFI` folder.
+4. Check the support status beside the device name. Tracks cannot be selected on an unsupported device.
+5. Check the tracks to download. The list at the right of each track selects the Spotify track used for its tags. Album Deck preselects a track with the same title or position; choose **MD 정보 사용** (Use MD info) to tag it from the MD title instead.
+6. Choose conversion options:
+   - **원곡 길이에 맞춰 앞부분만 저장** (Keep only the original length): after MP3 conversion, keep only the beginning of the recording, up to the matched Spotify track's length, to remove trailing silence. Tracks without a Spotify match, or MD tracks more than 45 seconds longer than the original, are not trimmed because the match is probably wrong.
+   - **앨범별 폴더로 분리 저장** (Separate folders by album): save each file in an `Artist - Album` subfolder. When disabled, files go directly into the selected folder.
+   - **WAV 파일도 함께 저장** (Also keep WAV files): keep the full-length decoded WAV beside the MP3.
+   - **MP3 품질** (MP3 quality): 320/256/192 kbps CBR or VBR V0. MP3 tracks on Hi-MD discs are saved without re-encoding.
+7. Select **저장 폴더 선택** (Choose output folder), then **다운로드 시작** (Start download).
+
+Files are named `01 Title.mp3`; multi-disc albums add the disc number, as in `2-01 Title.mp3`. Existing files with the same name are replaced. Keep the MD device connected and the window open until the transfer finishes.
+
 ## Troubleshooting
 
 ### Spotify connects but playback does not start
@@ -189,6 +220,13 @@ Album Deck writes the title, artist, album, original album track number, disc nu
 - Increase the silent gap.
 - Check automatic track marking or digital sync recording on the recorder.
 - Make sure browser notifications or other system sounds do not enter the silent gap.
+
+### The MD device does not appear
+
+- Open Album Deck at `http://127.0.0.1:8888` in Chrome or Edge.
+- Connect a NetMD device holding a standard MD with **NetMD 기기 연결**, and a Hi-MD device holding a Hi-MD formatted disc with **Hi-MD 드라이브 열기**.
+- Close other tabs or apps, such as Web MiniDisc, that are using the same device.
+- If Windows still cannot find a NetMD device, it may need the WinUSB driver described in the Web MiniDisc instructions.
 
 ### The server remains after the Album Deck window closes
 
@@ -264,6 +302,12 @@ A public deployment must use HTTPS. Register its exact `/callback` URL in Spotif
 ```powershell
 npm run check
 npm start
+```
+
+The MD import feature uses libraries in `web/vendor/` generated from `tools/md-lib`. After updating netmd-js or himd-js, rebuild them with the command below. netmd-js and himd-js are licensed under GPL-2.0, and the ffmpeg.wasm core under GPL-2.0-or-later.
+
+```powershell
+npm run build:md-lib
 ```
 
 The Node.js server only provides static files from `web/` and public runtime configuration. The browser sends login, search, and playback requests directly to Spotify. Album Deck does not use a Client Secret.
