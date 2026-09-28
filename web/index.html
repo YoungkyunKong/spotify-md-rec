@@ -289,7 +289,8 @@
         <label><input type="checkbox" id="mdSelectAll" /> 전체 선택</label>
         <span id="mdSelectionCount"></span>
       </div>
-      <div class="md-track-list" id="mdTrackList"></div>
+      <p class="md-selection-help">클릭: 한 곡만 선택 · Ctrl+클릭: 추가/해제 · Shift+클릭: 구간 선택 · Ctrl+A: 전체 선택 · ↑↓, Shift+↑↓, Space로도 선택할 수 있습니다.</p>
+      <div class="md-track-list" id="mdTrackList" tabindex="0" role="listbox" aria-multiselectable="true" aria-label="MD 곡 목록"></div>
       <fieldset class="md-options">
         <legend>변환 옵션</legend>
         <label class="md-option"><input type="checkbox" id="mdTrimOption" checked /><span><strong>원곡 길이에 맞춰 앞부분만 저장</strong><small>MP3 변환 후 매칭한 Spotify 곡 길이만큼 앞부분만 남기고 뒤쪽 무음을 잘라 냅니다.</small></span></label>
