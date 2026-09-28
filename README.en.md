@@ -16,6 +16,7 @@ Album Deck is a personal Spotify web player designed for MiniDisc recording. It 
 - Open the complete Korean or English guide from the in-app **Help** button
 - Write Spotify metadata to ID3 tags in existing MP3 files
 - Download tracks recorded on a MiniDisc over USB, then convert them to WAV and MP3, tag them, and sort them into album folders
+- Switch the interface between Korean and English
 - Run through the Windows installer, npm, Vercel, or a general Node.js host
 
 ## Requirements
@@ -73,46 +74,50 @@ Use `127.0.0.1`, not `localhost`. The protocol, host, port, path, capitalization
 
 Start **Album Deck** from the desktop, or run `npm start` and open [http://127.0.0.1:8888](http://127.0.0.1:8888).
 
-1. Select **설정** (Settings) at the top of the app.
+1. Select **Settings** at the top of the app.
 2. Paste the Client ID copied from Spotify Dashboard into **Client ID**.
 3. Confirm that **Redirect URI** is `http://127.0.0.1:8888/callback`.
 4. Choose the browser Album Deck should use the next time it starts. Windows uses Edge or Chrome, while macOS uses Safari by default.
 5. Choose a playback device:
-   - **이 브라우저 · Album Deck** (This browser · Album Deck) sends audio through the current PC. This is normally the correct choice for MD recording.
+   - **This browser · Album Deck** sends audio through the current PC. This is normally the correct choice for MD recording.
    - Select another listed Spotify Connect device to play through that device.
 6. Set the silent gap. Track detection varies by recorder and connection, so begin with a 2–3 second test.
-7. Select **저장** (Save).
+7. Select **Save**.
 
 ![Album Deck settings](docs/images/settings.jpg)
 
-Album Deck stores these settings and the Spotify login token in the current browser's local storage. On a shared PC, use **Spotify 연결됨 → 연결 해제** (Spotify connected → Disconnect) when you finish.
+### Choose the interface language
+
+Album Deck has Korean and English interfaces. On first launch it uses Korean when the browser language is Korean and English otherwise. Switch at any time with the **EN** / **한국어** button at the top of the app or under **Settings → Language**; the choice is remembered for the next launch. **Help** opens the guide in the selected language.
+
+Album Deck stores these settings and the Spotify login token in the current browser's local storage. On a shared PC, use **Spotify connected → Disconnect** when you finish.
 
 ## Connect Spotify
 
-1. Select **Spotify 연결** (Connect Spotify) in the upper-right corner.
+1. Select **Connect Spotify** in the upper-right corner.
 2. Choose the Premium account on Spotify's login and authorization page.
 3. After authorization, Spotify returns you to Album Deck automatically.
-4. Confirm that the button changes to **Spotify 연결됨** and your playlists appear.
+4. Confirm that the button changes to **Spotify connected** and your playlists appear.
 
-To use another account, select **Spotify 연결됨 → 다른 계정으로 연결**. If Spotify automatically selects the current account, use **Not you?** on the Spotify page.
+To use another account, select **Spotify connected → Use another account**. If Spotify automatically selects the current account, use **Not you?** on the Spotify page.
 
 The first login requests these scopes: `streaming`, `user-read-private`, `user-read-email`, `user-read-playback-state`, `user-modify-playback-state`, `playlist-read-private`, and `playlist-read-collaborative`.
 
 ## Play an album or playlist
 
-Select **도움말** (Help) at the top of the app to open this guide inside Album Deck. Use **English** at the top of the guide to switch languages, or select **새 창에서 열기** (Open in new window) for a larger browser view.
+Select **Help** at the top of the app to open this guide inside Album Deck. Use **English** at the top of the guide to switch languages, or select **Open in new window** for a larger browser view.
 
 ### Play an album
 
-1. Select **앨범 찾기** (Find albums) in the left sidebar.
+1. Select **Find albums** in the left sidebar.
 2. Enter an album or artist name and press Enter.
 3. Select an album card in the results.
-4. Check the tracks and order under **선택한 음악** (Selected tracks) on the right.
+4. Check the tracks and order under **Selected tracks** on the right.
 5. Playback starts from the first track. When a track finishes, Album Deck waits for the configured silent gap before starting the next track.
 
 ### Play a playlist
 
-1. Select **내 플레이리스트** (My playlists) in the left sidebar.
+1. Select **My playlists** in the left sidebar.
 2. Select the desired playlist.
 3. Check the tracks and their order before recording.
 
@@ -125,8 +130,8 @@ The bottom player controls playback, previous and next track, seek position, and
 ### 1. Check the connection and audio output
 
 1. Connect the PC's optical output or audio-interface output to the MiniDisc recorder input.
-2. In Album Deck, choose **이 브라우저 · Album Deck** under **Settings → Playback device**.
-3. On Windows, select **Windows 출력 설정 열기** (Open Windows output settings) and route Edge or Chrome to the audio device connected to the recorder.
+2. In Album Deck, choose **This browser · Album Deck** under **Settings → Playback device**.
+3. On Windows, select **Open Windows output settings** and route Edge or Chrome to the audio device connected to the recorder.
 4. On macOS, choose the MD-connected device under **System Settings → Sound → Output**. This changes system-wide output; use a per-application audio router if Safari alone must use the device.
 5. Close other audio sources, or route notifications and other system audio to another output.
 6. Play a short test track and check the recorder's input level and left/right channels.
@@ -155,11 +160,11 @@ Spotify or network response time can add a little extra delay after the configur
 This feature writes metadata from the selected Spotify album or playlist to MP3 files you already own. It does not save Spotify audio as MP3 files.
 
 1. Select an album or playlist first.
-2. Select **ID3 태그** above the track list on the right.
-3. Select **MP3 폴더 선택** (Choose MP3 folder) and choose the folder containing the files.
+2. Select **ID3 tags** above the track list on the right.
+3. Select **Choose MP3 folder** and choose the folder containing the files.
 4. Check the displayed MP3 file count and Spotify track count.
 5. Arrange filenames in natural numeric order (`01`, `02`, `03`, and so on). Album Deck matches this order to the Spotify track order.
-6. Select **태그 기록** (Write tags).
+6. Select **Write tags**.
 
 Album Deck writes the title, artist, album, original album track number, disc number, and release year when available. When tagging a playlist, it uses each song's position on its source album instead of its playlist position. A file is skipped when its duration differs from the Spotify track by more than 10 seconds. If the browser cannot write to the selected folder, it downloads a tagged copy instead of replacing the original. Test with copies of important files first.
 
@@ -171,8 +176,8 @@ Album Deck can download tracks recorded on a MiniDisc over USB, decode them to W
 
 | Media | Connection | Download support |
 | --- | --- | --- |
-| Standard MD (SP, LP2, LP4) | **NetMD 기기 연결** (Connect NetMD device, WebUSB) | Sony MZ-RH1 / MZ-M200 only. Other NetMD devices can connect and list tracks, but download stays disabled. |
-| Hi-MD formatted disc (PCM, ATRAC3, ATRAC3plus, MP3) | **Hi-MD 드라이브 열기** (Open Hi-MD drive, folder access) | Every Hi-MD device connected in Hi-MD mode that appears as a drive. |
+| Standard MD (SP, LP2, LP4) | **Connect NetMD device** (WebUSB) | Sony MZ-RH1 / MZ-M200 only. Other NetMD devices can connect and list tracks, but download stays disabled. |
+| Hi-MD formatted disc (PCM, ATRAC3, ATRAC3plus, MP3) | **Open Hi-MD drive** (folder access) | Every Hi-MD device connected in Hi-MD mode that appears as a drive. |
 
 - Use **Chrome or Edge**, which provide WebUSB and the File System Access API. Safari and Firefox are not supported.
 - The first conversion downloads ffmpeg.wasm (about 30 MB) from jsDelivr, so an internet connection is required.
@@ -180,16 +185,16 @@ Album Deck can download tracks recorded on a MiniDisc over USB, decode them to W
 ### Import tracks
 
 1. Optionally select the Spotify album or playlist to use for tags. Without one, Album Deck uses the title, artist, album, and disc title stored on the MD.
-2. Select **MD 가져오기** (Import from MD) at the top of the app.
-3. For a standard MD, select **NetMD 기기 연결** and choose the device. For a Hi-MD disc, select **Hi-MD 드라이브 열기** and choose the drive root that contains the `HMDHIFI` folder.
+2. Select **Import MD** at the top of the app.
+3. For a standard MD, select **Connect NetMD device** and choose the device. For a Hi-MD disc, select **Open Hi-MD drive** and choose the drive root that contains the `HMDHIFI` folder.
 4. Check the support status beside the device name. Tracks cannot be selected on an unsupported device.
-5. Check the tracks to download. As in Windows Explorer, clicking a track selects only that track, **Ctrl+click** adds or removes a track, and **Shift+click** selects the range from the last clicked track (**Ctrl+Shift+click** adds the range). In the list, **Ctrl+A** selects every track, and **↑/↓**, **Shift+↑/↓**, **Home/End**, and **Space** also change the selection. A checkbox toggles one track; Shift+clicking a checkbox applies its new state to the whole range. The list at the right of each track selects the Spotify track used for its tags. Album Deck preselects a track with the same title or position; choose **MD 정보 사용** (Use MD info) to tag it from the MD title instead.
+5. Check the tracks to download. As in Windows Explorer, clicking a track selects only that track, **Ctrl+click** adds or removes a track, and **Shift+click** selects the range from the last clicked track (**Ctrl+Shift+click** adds the range). In the list, **Ctrl+A** selects every track, and **↑/↓**, **Shift+↑/↓**, **Home/End**, and **Space** also change the selection. A checkbox toggles one track; Shift+clicking a checkbox applies its new state to the whole range. The list at the right of each track selects the Spotify track used for its tags. Album Deck preselects a track with the same title or position; choose **Use MD info** to tag it from the MD title instead.
 6. Choose conversion options:
-   - **원곡 길이에 맞춰 앞부분만 저장** (Keep only the original length): after MP3 conversion, keep only the beginning of the recording, up to the matched Spotify track's length, to remove trailing silence. Tracks without a Spotify match, or MD tracks more than 45 seconds longer than the original, are not trimmed because the match is probably wrong.
-   - **앨범별 폴더로 분리 저장** (Separate folders by album): save each file in an `Artist - Album` subfolder. When disabled, files go directly into the selected folder.
-   - **WAV 파일도 함께 저장** (Also keep WAV files): keep the full-length decoded WAV beside the MP3.
-   - **MP3 품질** (MP3 quality): 320/256/192 kbps CBR or VBR V0. MP3 tracks on Hi-MD discs are saved without re-encoding.
-7. Select **저장 폴더 선택** (Choose output folder), then **다운로드 시작** (Start download).
+   - **Keep only the original length**: after MP3 conversion, keep only the beginning of the recording, up to the matched Spotify track's length, to remove trailing silence. Tracks without a Spotify match, or MD tracks more than 45 seconds longer than the original, are not trimmed because the match is probably wrong.
+   - **Separate folders by album**: save each file in an `Artist - Album` subfolder. When disabled, files go directly into the selected folder.
+   - **Also keep WAV files**: keep the full-length decoded WAV beside the MP3.
+   - **MP3 quality**: 320/256/192 kbps CBR or VBR V0. MP3 tracks on Hi-MD discs are saved without re-encoding.
+7. Select **Choose output folder**, then **Start download**.
 
 Files are named `01 Title.mp3`; multi-disc albums add the disc number, as in `2-01 Title.mp3`. Existing files with the same name are replaced. Keep the MD device connected and the window open until the transfer finishes.
 
@@ -224,7 +229,7 @@ Files are named `01 Title.mp3`; multi-disc albums add the disc number, as in `2-
 ### The MD device does not appear
 
 - Open Album Deck at `http://127.0.0.1:8888` in Chrome or Edge.
-- Connect a NetMD device holding a standard MD with **NetMD 기기 연결**, and a Hi-MD device holding a Hi-MD formatted disc with **Hi-MD 드라이브 열기**.
+- Connect a NetMD device holding a standard MD with **Connect NetMD device**, and a Hi-MD device holding a Hi-MD formatted disc with **Open Hi-MD drive**.
 - Close other tabs or apps, such as Web MiniDisc, that are using the same device.
 - If Windows still cannot find a NetMD device, it may need the WinUSB driver described in the Web MiniDisc instructions.
 

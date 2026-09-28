@@ -1,3 +1,5 @@
+import { t, language, setLanguage, applyTranslations } from "/i18n.js";
+
 const runtimeConfig = window.ALBUM_DECK_CONFIG || {};
 const TOKEN_KEY = "albumdeck.spotify.session.v1";
 const SPOTIFY_CONFIG_KEY = "albumdeck.spotify.config.v1";
@@ -46,6 +48,8 @@ const dom = {
   tagEditor: $("#tagEditorButton"), tagDialog: $("#tagDialog"), chooseTagFiles: $("#chooseTagFiles"),
   tagFileInput: $("#tagFileInput"), tagFileSummary: $("#tagFileSummary"), tagProgress: $("#tagProgress"),
   tagCancel: $("#tagCancel"), applyTags: $("#applyTags"), mdTransfer: $("#mdTransferButton"),
+  languageToggle: $("#languageToggle"), languageSelect: $("#languageSelect"), outputLabel: $(".output-label"),
+  helpFrame: $("#helpFrame"), helpOpenWindow: $("#helpOpenWindow"), gapScale: $$("#gapScale span"),
 };
 
 let token = readSession();
@@ -57,12 +61,14 @@ let activeView = "search";
 let busy = false;
 let seeking = false;
 let playlistCache = [];
+let playlistsLoaded = false;
 let sdkPromise = null;
 let currentArtwork = "";
 let playbackQueue = [];
 let queueTracks = [];
 let tagTracks = [];
-let queueContextLabel = "선택한 음악";
+let queueContextLabel = "";
+let lastSearch = null;
 let tagFileHandles = [];
 let tagFiles = [];
 let queueIndex = -1;
@@ -102,14 +108,14 @@ function readSpotifyConfig() {
 
 function validateSpotifyConfig(clientId, redirectUri) {
   const normalizedClientId = String(clientId || "").trim();
-  if (!normalizedClientId) throw new Error("Spotify Client ID를 입력해 주세요.");
-  if (!/^[A-Za-z0-9]{16,64}$/.test(normalizedClientId)) throw new Error("Spotify Client ID 형식을 확인해 주세요.");
+  if (!normalizedClientId) throw new Error(t("error.clientIdRequired"));
+  if (!/^[A-Za-z0-9]{16,64}$/.test(normalizedClientId)) throw new Error(t("error.clientIdFormat"));
   let url;
   try { url = new URL(String(redirectUri || "").trim()); }
-  catch { throw new Error("Redirect URI를 올바른 주소로 입력해 주세요."); }
+  catch { throw new Error(t("error.redirectInvalid")); }
   const loopback = url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "[::1]";
   if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) {
-    throw new Error("Redirect URI는 HTTPS 또는 로컬 주소를 사용해야 합니다.");
+    throw new Error(t("error.redirectInsecure"));
   }
   url.hash = "";
   return { clientId: normalizedClientId, redirectUri: url.href };
@@ -130,16 +136,16 @@ function readGapSeconds() {
 }
 
 function gapLabel(value) {
-  return `${Number(value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}초`;
+  return t("gap.seconds", { value: Number(value).toLocaleString(language === "ko" ? "ko-KR" : "en-US", { maximumFractionDigits: 1 }) });
 }
 
 function readTargetDevice() {
   try {
     const saved = JSON.parse(localStorage.getItem(DEVICE_KEY) || "null");
     return saved?.mode === "spotify" && saved.id
-      ? { mode: "spotify", id: saved.id, name: saved.name || "Spotify 장치", type: saved.type || "unknown", supports_volume: saved.supports_volume !== false }
-      : { mode: "browser", name: "이 브라우저" };
-  } catch { return { mode: "browser", name: "이 브라우저" }; }
+      ? { mode: "spotify", id: saved.id, name: saved.name || t("device.spotifyFallback"), type: saved.type || "unknown", supports_volume: saved.supports_volume !== false }
+      : { mode: "browser", name: "" };
+  } catch { return { mode: "browser", name: "" }; }
 }
 
 function usesBrowserPlayer() {
@@ -148,12 +154,13 @@ function usesBrowserPlayer() {
 
 function targetDeviceId() {
   const id = usesBrowserPlayer() ? deviceId : targetDevice.id;
-  if (!id) throw new Error("선택한 재생 장치를 사용할 수 없습니다. 설정에서 장치를 새로고침해 주세요.");
+  if (!id) throw new Error(t("error.deviceUnavailable"));
   return id;
 }
 
 function updateOutputLabel() {
-  dom.output.textContent = usesBrowserPlayer() ? "Album Deck · 이 브라우저" : `${targetDevice.name} · Spotify Connect`;
+  dom.output.textContent = usesBrowserPlayer() ? t("device.browserOutput") : `${targetDevice.name} · Spotify Connect`;
+  dom.outputLabel.textContent = usesBrowserPlayer() ? t("device.thisBrowser") : targetDevice.name;
   dom.localOutput.hidden = dom.deviceSelect.value !== "browser";
   setTransportEnabled(Boolean(deviceId));
 }
@@ -162,11 +169,12 @@ function updateGapUi(value = gapSeconds) {
   dom.gapInput.value = String(value);
   dom.gapValue.textContent = gapLabel(value);
   dom.gapBadge.textContent = gapLabel(value);
+  dom.gapScale.forEach((span, index) => { span.textContent = gapLabel([0, 15, 30][index]); });
 }
 
 function deviceTypeLabel(type) {
   const normalized = String(type || "").toLowerCase();
-  return ({ computer: "컴퓨터", smartphone: "휴대전화", speaker: "스피커", tv: "TV", game_console: "게임기" })[normalized] || type || "장치";
+  return ["computer", "smartphone", "speaker", "tv", "game_console"].includes(normalized) ? t(`device.type.${normalized}`) : type || t("device.type.default");
 }
 
 async function refreshDeviceOptions() {
@@ -177,7 +185,7 @@ async function refreshDeviceOptions() {
     const payload = token ? await spotifyApi("/me/player/devices") : { devices: [] };
     availableDevices = (payload.devices || []).filter((item) => item?.id && !item.is_restricted && item.id !== deviceId);
     dom.deviceSelect.replaceChildren();
-    const browserOption = new Option("이 브라우저 · Album Deck", "browser");
+    const browserOption = new Option(t("device.browserOption"), "browser");
     dom.deviceSelect.append(browserOption);
     for (const item of availableDevices) {
       dom.deviceSelect.append(new Option(`${item.name} · ${deviceTypeLabel(item.type)}`, `spotify:${item.id}`));
@@ -189,13 +197,13 @@ async function refreshDeviceOptions() {
         targetDevice = { mode: "spotify", id: match.id, name: match.name, type: match.type, supports_volume: match.supports_volume !== false };
         dom.deviceSelect.value = `spotify:${match.id}`;
       } else {
-        dom.deviceSelect.append(new Option(`${preferred.name} · 현재 연결 안 됨`, `spotify:${preferred.id}`, false, true));
+        dom.deviceSelect.append(new Option(t("device.notConnected", { name: preferred.name }), `spotify:${preferred.id}`, false, true));
       }
     } else {
       dom.deviceSelect.value = "browser";
     }
   } catch (error) {
-    showToast(`재생 장치를 불러오지 못했습니다: ${error.message}`, "error", 7000);
+    showToast(t("toast.devicesFailed", { error: error.message }), "error", 7000);
   } finally {
     dom.deviceSelect.disabled = false;
     dom.refreshDevices.disabled = false;
@@ -204,11 +212,11 @@ async function refreshDeviceOptions() {
 }
 
 function selectedDeviceFromSettings() {
-  if (dom.deviceSelect.value === "browser") return { mode: "browser", name: "이 브라우저" };
+  if (dom.deviceSelect.value === "browser") return { mode: "browser", name: "" };
   const id = dom.deviceSelect.value.replace(/^spotify:/, "");
   const device = availableDevices.find((item) => item.id === id);
   if (!device && targetDevice.mode === "spotify" && targetDevice.id === id) return targetDevice;
-  if (!device) throw new Error("선택한 Spotify 장치를 찾을 수 없습니다. 장치를 새로고침해 주세요.");
+  if (!device) throw new Error(t("error.deviceNotFound"));
   return { mode: "spotify", id: device.id, name: device.name, type: device.type, supports_volume: device.supports_volume !== false };
 }
 
@@ -239,7 +247,7 @@ function clearSession({ preserveDevice = false } = {}) {
   playbackQueue = [];
   queueTracks = [];
   tagTracks = [];
-  queueContextLabel = "선택한 음악";
+  queueContextLabel = "";
   dom.tagEditor.disabled = true;
   queueIndex = -1;
   if (queueAdvanceTimer) window.clearTimeout(queueAdvanceTimer);
@@ -249,7 +257,7 @@ function clearSession({ preserveDevice = false } = {}) {
   queueEndDeadline = 0;
   queueGeneration += 1;
   queueInGap = false;
-  if (!preserveDevice) targetDevice = { mode: "browser", name: "이 브라우저" };
+  if (!preserveDevice) targetDevice = { mode: "browser", name: "" };
   availableDevices = [];
   if (!preserveDevice) {
     try { localStorage.removeItem(DEVICE_KEY); } catch { /* Ignore unavailable storage. */ }
@@ -258,9 +266,11 @@ function clearSession({ preserveDevice = false } = {}) {
   updateConnection(false);
   renderState(null);
   setTransportEnabled(false);
-  dom.status.textContent = "연결 대기 중";
-  dom.shortcuts.replaceChildren(make("div", "sidebar-empty", "Spotify에 연결하면\n플레이리스트가 나타납니다."));
-  dom.playlistGrid.replaceChildren(makeEmpty("Spotify에 연결해 주세요."));
+  dom.status.textContent = t("status.waiting");
+  playlistCache = [];
+  playlistsLoaded = false;
+  lastSearch = null;
+  renderPlaylists();
   dom.albumGrid.replaceChildren(makeWelcome());
   dom.playlistCount.textContent = "";
   dom.resultCount.textContent = "";
@@ -283,16 +293,16 @@ function showToast(message, kind = "", duration = 4800) {
 function setBusy(value) {
   busy = value;
   dom.connect.disabled = value;
-  if (value) dom.connect.textContent = "연결 중…";
+  if (value) dom.connect.textContent = t("connect.connecting");
   else updateConnection(Boolean(token));
 }
 
 function updateConnection(connected) {
-  dom.connect.textContent = connected ? "Spotify 연결됨" : "Spotify 연결";
+  dom.connect.textContent = t(connected ? "connect.connected" : "connect.connect");
   dom.connect.classList.toggle("connected", connected);
-  if (connected) dom.status.textContent = deviceId ? "준비 완료" : "플레이어 연결 중";
+  if (connected) dom.status.textContent = t(deviceId ? "status.ready" : "status.connectingPlayer");
   else {
-    dom.status.textContent = "연결 대기 중";
+    dom.status.textContent = t("status.waiting");
   }
 }
 
@@ -318,7 +328,7 @@ function processOAuthError() {
   history.replaceState({}, "", "/");
   sessionStorage.removeItem("albumdeck.oauth.state");
   sessionStorage.removeItem("albumdeck.oauth.verifier");
-  showToast(`Spotify 로그인이 취소되었습니다: ${error}`, "error");
+  showToast(t("toast.loginCancelled", { error }), "error");
   return true;
 }
 
@@ -333,7 +343,7 @@ async function finishAuthorization() {
   sessionStorage.removeItem("albumdeck.oauth.state");
   sessionStorage.removeItem("albumdeck.oauth.verifier");
   if (!state || state !== expectedState || !verifier) {
-    showToast("로그인 state 확인에 실패했습니다. 다시 연결해 주세요.", "error");
+    showToast(t("toast.stateMismatch"), "error");
     return true;
   }
   setBusy(true);
@@ -342,10 +352,10 @@ async function finishAuthorization() {
       grant_type: "authorization_code", code, redirect_uri: spotifyConfig.redirectUri, code_verifier: verifier,
     });
     saveSession({ ...result, expires_at: Date.now() + result.expires_in * 1000 });
-    showToast("Spotify에 연결했습니다.");
+    showToast(t("toast.connected"));
   } catch (error) {
     clearSession();
-    showToast(`Spotify 로그인 실패: ${error.message}`, "error", 7000);
+    showToast(t("toast.loginFailed", { error: error.message }), "error", 7000);
     setBusy(false);
     return true;
   }
@@ -359,15 +369,15 @@ async function finishAuthorization() {
 
 async function initializeConnectedApp() {
   const steps = [
-    ["계정 정보", loadProfile()],
-    ["플레이리스트", loadPlaylists()],
-    ["내장 플레이어", connectPlayer()],
+    [t("step.profile"), loadProfile()],
+    [t("step.playlists"), loadPlaylists()],
+    [t("step.player"), connectPlayer()],
   ];
   const results = await Promise.allSettled(steps.map(([, task]) => task));
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
-      showToast(`${steps[index][0]} 초기화 실패: ${message}`, "error", 9000);
+      showToast(t("toast.initFailed", { step: steps[index][0], error: message }), "error", 9000);
     }
   });
 }
@@ -399,14 +409,14 @@ async function tokenRequest(fields) {
     body: new URLSearchParams({ client_id: config.clientId, ...fields }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error_description || data.error || `Spotify 로그인 오류 (${response.status})`);
+  if (!response.ok) throw new Error(data.error_description || data.error || t("error.loginError", { status: response.status }));
   return data;
 }
 
 async function accessToken() {
-  if (!token?.access_token) throw new Error("Spotify에 먼저 연결해 주세요.");
+  if (!token?.access_token) throw new Error(t("error.connectFirst"));
   if (token.expires_at > Date.now() + 60_000) return token.access_token;
-  if (!token.refresh_token) throw new Error("인증이 만료되었습니다. Spotify에 다시 연결해 주세요.");
+  if (!token.refresh_token) throw Object.assign(new Error(t("error.authExpired")), { code: "auth_expired" });
   const refreshed = await tokenRequest({ grant_type: "refresh_token", refresh_token: token.refresh_token });
   saveSession({ ...token, ...refreshed, refresh_token: refreshed.refresh_token || token.refresh_token,
     expires_at: Date.now() + refreshed.expires_in * 1000 });
@@ -417,16 +427,16 @@ async function spotifyApi(path, options = {}) {
   const backoffSeconds = Math.ceil((spotifyBackoffUntil - Date.now()) / 1000);
   if (backoffSeconds > 0) {
     if (spotifyBackoffReason === "quota") {
-      throw new Error(`Spotify 개발 모드 할당량에 도달했습니다. 리셋 시각은 공개되지 않았으며, 앱이 재요청을 ${backoffSeconds}초 동안 중지합니다.`);
+      throw new Error(t("error.quotaBackoff", { seconds: backoffSeconds }));
     }
-    throw new Error(`Spotify 요청 한도에 도달했습니다. ${backoffSeconds}초 후 다시 시도해 주세요.`);
+    throw new Error(t("error.rateBackoff", { seconds: backoffSeconds }));
   }
   const bearer = await accessToken();
   const url = path.startsWith("https://")
     ? new URL(path)
     : new URL(`https://api.spotify.com/v1${path.startsWith("/") ? path : `/${path}`}`);
   if (url.origin !== "https://api.spotify.com" || !url.pathname.startsWith("/v1/")) {
-    throw new Error("허용되지 않은 Spotify API 주소입니다.");
+    throw new Error(t("error.apiNotAllowed"));
   }
   let response;
   try {
@@ -435,7 +445,7 @@ async function spotifyApi(path, options = {}) {
       headers: { Authorization: `Bearer ${bearer}`, ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
     });
   } catch (error) {
-    throw new Error(`Spotify API 네트워크 오류 (${url.pathname}): ${error.message}`);
+    throw new Error(t("error.network", { path: url.pathname, error: error.message }));
   }
   if (response.status === 204) return null;
   const data = await response.json().catch(() => ({}));
@@ -454,7 +464,7 @@ async function spotifyApi(path, options = {}) {
 
 function spotifyError(response, data) {
   const detail = data?.error?.message || data?.error_description || `HTTP ${response.status}`;
-  if (response.status === 403) return new Error(`Spotify 재생 권한을 확인해 주세요. ${detail}`);
+  if (response.status === 403) return new Error(t("error.playbackPermission", { detail }));
   if (response.status === 429) {
     const quotaExceeded = data?.error?.reason === "QUOTA_EXCEEDED";
     const headerSeconds = Number(response.headers.get("Retry-After"));
@@ -463,11 +473,11 @@ function spotifyError(response, data) {
     spotifyBackoffReason = quotaExceeded ? "quota" : "rate";
     return new Error(quotaExceeded
       ? (Number.isFinite(headerSeconds) && headerSeconds > 0
-        ? `Spotify 개발 모드 할당량에 도달했습니다. Spotify가 ${waitSeconds}초 후 재시도를 요청했습니다. (${detail})`
-        : `Spotify 개발 모드 할당량에 도달했습니다. Spotify는 리셋 시각을 제공하지 않았으며, 앱이 5분 동안 재요청을 중지합니다. (${detail})`)
-      : `Spotify 요청 한도에 도달했습니다. ${waitSeconds}초 후 다시 시도해 주세요. (${detail})`);
+        ? t("error.quotaRetry", { seconds: waitSeconds, detail })
+        : t("error.quotaNoReset", { detail }))
+      : t("error.rateRetry", { seconds: waitSeconds, detail }));
   }
-  return new Error(`Spotify API 오류 (${response.status}): ${detail}`);
+  return new Error(t("error.api", { status: response.status, detail }));
 }
 
 function readBrowserPreference() {
@@ -487,17 +497,21 @@ async function refreshBrowserOptions() {
   const available = Array.isArray(config?.available) && config.available.length
     ? config.available
     : ["edge", "chrome"];
-  const labels = { auto: "자동 선택", safari: "Safari", edge: "Microsoft Edge", chrome: "Google Chrome", system: "시스템 기본 브라우저" };
+  const labels = { auto: t("browser.auto"), safari: "Safari", edge: "Microsoft Edge", chrome: "Google Chrome", system: t("browser.system") };
   const values = ["auto", ...available.filter((value) => ["safari", "edge", "chrome"].includes(value))];
   const selected = values.includes(config?.selected) ? config.selected : (values.includes(browserPreference) ? browserPreference : "auto");
   browserPreference = selected;
   dom.browserSelect.replaceChildren(...values.map((value) => new Option(labels[value], value, false, value === selected)));
+  renderPlatformOutputHelp();
+}
+
+function renderPlatformOutputHelp() {
   if (runtimePlatform === "darwin") {
-    dom.localOutputHelp.textContent = "macOS 기본 출력 장치를 사용합니다. Safari만 별도 장치로 보내려면 앱별 오디오 라우팅 도구가 필요합니다.";
-    dom.openSoundSettings.textContent = "macOS 출력 설정 안내";
+    dom.localOutputHelp.textContent = t("settings.localOutputMac");
+    dom.openSoundSettings.textContent = t("settings.openMacOutput");
   } else if (runtimePlatform === "win32") {
-    dom.localOutputHelp.textContent = "Windows에서 사용 중인 브라우저의 출력 장치를 별도로 지정할 수 있습니다.";
-    dom.openSoundSettings.textContent = "Windows 출력 설정 열기";
+    dom.localOutputHelp.textContent = t("settings.localOutputWindows");
+    dom.openSoundSettings.textContent = t("settings.openWindowsOutput");
   }
 }
 
@@ -516,7 +530,7 @@ function waitForSdk(timeout = 12_000) {
       const started = Date.now();
       const poll = () => {
         if (window.Spotify?.Player && window.spotifySdkReady) resolve();
-        else if (Date.now() - started > timeout) reject(new Error("Spotify 재생 SDK를 불러오지 못했습니다. 네트워크나 브라우저 확장 기능을 확인해 주세요."));
+        else if (Date.now() - started > timeout) reject(new Error(t("error.sdkLoad")));
         else window.setTimeout(poll, 100);
       };
       poll();
@@ -536,18 +550,18 @@ async function connectPlayer() {
   player.addListener("ready", ({ device_id }) => {
     deviceId = device_id;
     updateOutputLabel();
-    dom.status.textContent = "준비 완료";
+    dom.status.textContent = t("status.ready");
     setPlaybackActivity(false);
     setTransportEnabled(true);
-    showToast("내장 플레이어가 준비됐습니다.");
+    showToast(t("toast.playerReady"));
   });
   player.addListener("not_ready", () => {
     deviceId = null;
     setPlaybackActivity(false);
     if (usesBrowserPlayer()) {
-      dom.status.textContent = "연결 끊김";
+      dom.status.textContent = t("status.disconnected");
       setTransportEnabled(false);
-      showToast("플레이어 연결이 끊겼습니다. 브라우저를 확인해 주세요.", "warning");
+      showToast(t("toast.playerDisconnected"), "warning");
     }
   });
   player.addListener("player_state_changed", (state) => {
@@ -555,13 +569,13 @@ async function connectPlayer() {
     renderState(state);
     observeQueueState(state);
   });
-  player.addListener("initialization_error", ({ message }) => showToast(`재생기를 시작하지 못했습니다: ${message}`, "error", 8000));
-  player.addListener("authentication_error", ({ message }) => showToast(`Spotify 인증 오류: ${message}`, "error", 8000));
-  player.addListener("account_error", ({ message }) => showToast(`Web Playback SDK에는 Premium이 필요합니다. ${message}`, "error", 8000));
+  player.addListener("initialization_error", ({ message }) => showToast(t("toast.playerInitError", { error: message }), "error", 8000));
+  player.addListener("authentication_error", ({ message }) => showToast(t("toast.authError", { error: message }), "error", 8000));
+  player.addListener("account_error", ({ message }) => showToast(t("toast.premiumRequired", { error: message }), "error", 8000));
   player.addListener("playback_error", ({ message }) => handlePlaybackError(message));
-  player.addListener("autoplay_failed", () => showToast("브라우저가 자동 재생을 차단했습니다. 재생 버튼을 눌러 주세요.", "warning"));
+  player.addListener("autoplay_failed", () => showToast(t("toast.autoplayBlocked"), "warning"));
   const connected = await player.connect();
-  if (!connected) throw new Error("Spotify 내장 플레이어에 연결하지 못했습니다.");
+  if (!connected) throw new Error(t("error.playerConnect"));
 }
 
 async function pollPlayer() {
@@ -624,20 +638,20 @@ async function stopPlaybackAtEnd() {
     } catch (error) { failure ||= error; }
   }
   if (paused) failure = null;
-  if (!paused && !failure) failure = new Error("광출력 정지 상태를 확인하지 못했습니다.");
+  if (!paused && !failure) failure = new Error(t("error.stopUnconfirmed"));
   try { await seekPlayback(0); } catch (error) { failure ||= error; }
   if (failure) throw failure;
   if (currentState) {
     currentState = { ...currentState, paused: true, position: 0 };
     renderState(currentState);
   }
-  dom.status.textContent = "재생 종료 · 광출력 정지";
+  dom.status.textContent = t("status.finished");
 }
 
 async function togglePlayback() {
   if (usesBrowserPlayer()) return player?.togglePlay();
   const state = await playbackState();
-  if (!state) throw new Error("선택한 장치에서 재생 중인 곡이 없습니다.");
+  if (!state) throw new Error(t("error.nothingPlaying"));
   const action = state.paused ? "play" : "pause";
   await spotifyApi(`/me/player/${action}?device_id=${encodeURIComponent(targetDeviceId())}`, { method: "PUT" });
   renderState({ ...state, paused: !state.paused });
@@ -680,17 +694,15 @@ function renderStreamQuality(track) {
     return;
   }
   if (usesBrowserPlayer() && track.type === "track") {
-    dom.streamFormat.textContent = "AAC (웹 기준)";
-    dom.streamBitrate.textContent = "256 kbps (웹 기준)";
-    dom.streamQualityNote.textContent = "Spotify 웹 플레이어 안내값입니다. 현재 곡의 실제 전송값은 제공되지 않습니다.";
-    dom.miniStreamQuality.textContent = "웹 기준 AAC · 256 kbps (실측 아님)";
+    dom.streamFormat.textContent = t("quality.webFormat");
+    dom.streamBitrate.textContent = t("quality.webBitrate");
+    dom.streamQualityNote.textContent = t("quality.webNote");
+    dom.miniStreamQuality.textContent = t("quality.webMini");
   } else {
-    dom.streamFormat.textContent = "확인 불가";
-    dom.streamBitrate.textContent = "확인 불가";
-    dom.streamQualityNote.textContent = usesBrowserPlayer()
-      ? "이 콘텐츠의 실제 형식과 비트레이트는 제공되지 않습니다."
-      : "Spotify Connect 장치의 실제 형식과 비트레이트는 제공되지 않습니다.";
-    dom.miniStreamQuality.textContent = "형식 · 비트레이트 확인 불가";
+    dom.streamFormat.textContent = t("quality.unknown");
+    dom.streamBitrate.textContent = t("quality.unknown");
+    dom.streamQualityNote.textContent = t(usesBrowserPlayer() ? "quality.unknownContent" : "quality.unknownConnect");
+    dom.miniStreamQuality.textContent = t("quality.unknownMini");
   }
   dom.streamQualityNote.hidden = false;
   dom.miniStreamQuality.hidden = false;
@@ -710,10 +722,10 @@ function renderState(state) {
   const playing = !state.paused;
   const artwork = track.album?.images?.[0]?.url || track.album?.image || "";
   const artist = (track.artists || []).map((item) => item.name).join(", ");
-  dom.nowTitle.textContent = track.name || "Spotify 트랙";
+  dom.nowTitle.textContent = track.name || t("track.fallbackTitle");
   dom.nowArtist.textContent = artist || track.album?.name || "";
   dom.trackKind.textContent = track.album?.name || "SPOTIFY PLAYER";
-  dom.miniTitle.textContent = track.name || "Spotify 트랙";
+  dom.miniTitle.textContent = track.name || t("track.fallbackTitle");
   dom.miniArtist.textContent = artist;
   dom.elapsed.textContent = timeLabel(state.position || 0);
   dom.duration.textContent = timeLabel(state.duration || 0);
@@ -721,13 +733,13 @@ function renderState(state) {
   if (!seeking) dom.seek.value = String(state.position || 0);
   setPlaybackActivity(playing);
   dom.play.classList.toggle("paused", playing);
-  dom.play.setAttribute("aria-label", playing ? "일시정지" : "재생");
-  dom.play.title = playing ? "일시정지" : "재생";
+  dom.play.setAttribute("aria-label", t(playing ? "player.pause" : "player.play"));
+  dom.play.title = t(playing ? "player.pause" : "player.play");
   dom.play.innerHTML = `<span class="play-triangle">${playing ? "Ⅱ" : "▶"}</span>`;
   dom.playerBar.classList.toggle("playing", playing);
   dom.status.textContent = queueInGap
-    ? (gapSeconds > 0 ? `곡간 무음 · ${gapLabel(gapSeconds)}` : "다음 곡 준비 중")
-    : (playing ? "재생 중" : "일시정지");
+    ? (gapSeconds > 0 ? t("status.gap", { gap: gapLabel(gapSeconds) }) : t("status.preparingNext"))
+    : t(playing ? "status.playing" : "status.paused");
   dom.seek.disabled = !(usesBrowserPlayer() ? deviceId : targetDevice.id);
   const link = track.uri ? `https://open.spotify.com/track/${encodeURIComponent(track.uri.split(":").at(-1))}` : "https://open.spotify.com";
   dom.artLink.href = link;
@@ -753,13 +765,13 @@ function timeLabel(milliseconds) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-async function playContext(uri, label = "재생") {
+async function playContext(uri, label = t("play.defaultLabel")) {
   if (!token) { openAccountDialog(); return; }
-  if (usesBrowserPlayer() && (!deviceId || !player)) { showToast("내장 플레이어가 아직 준비되지 않았습니다.", "warning"); return; }
+  if (usesBrowserPlayer() && (!deviceId || !player)) { showToast(t("toast.playerNotReady"), "warning"); return; }
   try {
     const allTracks = await contextTracks(uri);
     const tracks = allTracks.filter((track) => track.playable);
-    if (!tracks.length) throw new Error("재생 가능한 곡을 찾지 못했습니다.");
+    if (!tracks.length) throw new Error(t("error.noPlayableTracks"));
     if (usesBrowserPlayer()) await player.activateElement();
     queueTracks = tracks;
     tagTracks = allTracks;
@@ -768,8 +780,8 @@ async function playContext(uri, label = "재생") {
     queueIndex = 0;
     renderContextQueue(label);
     await playQueuedTrack();
-    dom.status.textContent = "재생 요청 전송";
-    showToast(`${label}을(를) ${usesBrowserPlayer() ? "Album Deck" : targetDevice.name}에서 재생합니다.`);
+    dom.status.textContent = t("status.requestSent");
+    showToast(t("toast.playingOn", { label, device: usesBrowserPlayer() ? "Album Deck" : targetDevice.name }));
   } catch (error) {
     showToast(error.message, "error", 7000);
   }
@@ -793,7 +805,7 @@ async function playQueuedTrack(index = queueIndex) {
     method: "PUT", body: JSON.stringify({ uris: [playbackQueue[queueIndex]] }),
   });
   const loaded = await waitForQueuedTrack(playbackQueue[queueIndex], usesBrowserPlayer() ? 4000 : 7000);
-  if (!loaded) throw new Error("요청한 곡을 플레이어에 불러오지 못했습니다.");
+  if (!loaded) throw new Error(t("error.trackLoadFailed"));
   if (!usesBrowserPlayer()) {
     renderState(loaded);
     observeQueueState(loaded);
@@ -821,7 +833,7 @@ async function waitForQueuedTrack(expectedUri, timeout = 4000) {
 function handlePlaybackError(message) {
   if (!usesBrowserPlayer()) return;
   if (message !== "Playback error" || queueIndex < 0 || !playbackQueue[queueIndex]) {
-    showToast(`곡을 재생하지 못했습니다: ${message}`, "error", 8000);
+    showToast(t("toast.playFailed", { error: message }), "error", 8000);
     return;
   }
   if (playbackErrorTimer) window.clearTimeout(playbackErrorTimer);
@@ -829,7 +841,7 @@ function handlePlaybackError(message) {
     playbackErrorTimer = null;
     const state = await player?.getCurrentState().catch(() => null);
     if (currentTrack(state)?.uri !== playbackQueue[queueIndex]) {
-      showToast("곡을 재생하지 못했습니다: Playback error", "error", 8000);
+      showToast(t("toast.playFailed", { error: "Playback error" }), "error", 8000);
     }
   }, 1600);
 }
@@ -898,7 +910,7 @@ function beginQueueAdvance(state) {
     queueEndDeadline = 0;
     setPlaybackActivity(false);
     dom.playerBar.classList.remove("playing");
-    stopPlaybackAtEnd().catch(() => { dom.status.textContent = "재생 종료 · 광출력 정지 실패"; });
+    stopPlaybackAtEnd().catch(() => { dom.status.textContent = t("status.finishFailed"); });
     return;
   }
   const generation = queueGeneration;
@@ -909,7 +921,7 @@ function beginQueueAdvance(state) {
   queueEndTimer = null;
   queueEndDeadline = 0;
   if (state && !state.paused) pausePlayback().catch(() => {});
-  dom.status.textContent = gapSeconds > 0 ? `곡간 무음 · ${gapLabel(gapSeconds)}` : "다음 곡 준비 중";
+  dom.status.textContent = gapSeconds > 0 ? t("status.gap", { gap: gapLabel(gapSeconds) }) : t("status.preparingNext");
   setPlaybackActivity(false);
   dom.playerBar.classList.remove("playing");
   queueAdvanceTimer = window.setTimeout(() => {
@@ -922,7 +934,7 @@ function beginQueueAdvance(state) {
 async function playNext() {
   if (queueIndex >= 0) {
     if (queueIndex < playbackQueue.length - 1) return playQueuedTrack(queueIndex + 1);
-    showToast("마지막 곡입니다.");
+    showToast(t("toast.lastTrack"));
     return;
   }
   if (usesBrowserPlayer()) return player?.nextTrack();
@@ -938,24 +950,24 @@ async function playPrevious() {
   return spotifyApi(`/me/player/previous?device_id=${encodeURIComponent(targetDeviceId())}`, { method: "POST" });
 }
 
-function renderContextQueue(label = "선택한 음악") {
+function renderContextQueue(label = "") {
   queueContextLabel = label;
-  dom.queueTitle.textContent = label;
-  dom.queueCount.textContent = `${queueTracks.length}곡`;
+  dom.queueTitle.textContent = label || t("queue.defaultTitle");
+  dom.queueCount.textContent = t("queue.count", { count: queueTracks.length });
   dom.tagEditor.disabled = !(tagTracks.length || queueTracks.length);
   dom.queueList.replaceChildren();
   if (!queueTracks.length) {
-    dom.queueList.append(make("div", "context-queue-empty", "앨범이나 플레이리스트를 선택하면\n곡 목록이 표시됩니다."));
+    dom.queueList.append(make("div", "context-queue-empty", t("queue.empty")));
     return;
   }
   queueTracks.forEach((track, index) => {
     const row = make("button", "context-track");
     row.type = "button";
     row.dataset.queueIndex = String(index);
-    row.setAttribute("aria-label", `${index + 1}. ${track.name} 재생`);
+    row.setAttribute("aria-label", t("queue.playAria", { number: index + 1, name: track.name }));
     row.append(make("span", "context-track-number", String(index + 1).padStart(2, "0")));
     const copy = make("span", "context-track-copy");
-    copy.append(make("strong", "", track.name), make("span", "", track.artist || "아티스트 정보 없음"));
+    copy.append(make("strong", "", track.name), make("span", "", track.artist || t("queue.noArtist")));
     row.append(copy, make("span", "context-track-duration", timeLabel(track.duration_ms)));
     row.addEventListener("click", () => playQueuedTrack(index).catch((error) => showToast(error.message, "error", 7000)));
     dom.queueList.append(row);
@@ -976,7 +988,7 @@ function updateQueueHighlight(scroll = true) {
 
 async function contextTracks(contextUri) {
   const match = /^spotify:(album|playlist):([A-Za-z0-9]+)$/.exec(contextUri || "");
-  if (!match) throw new Error("지원하지 않는 Spotify 재생 주소입니다.");
+  if (!match) throw new Error(t("error.unsupportedUri"));
   const [, type, id] = match;
   let albumContext = null;
   let rows;
@@ -1003,7 +1015,7 @@ async function contextTracks(contextUri) {
     const discNumber = Number(track.disc_number) || 1;
     return {
       uri: track.uri,
-      name: track.name || "제목 없음",
+      name: track.name || t("track.untitled"),
       artist: (track.artists || []).map((artist) => artist.name).filter(Boolean).join(", "),
       duration_ms: track.duration_ms || 0,
       album: track.album?.name || albumContext?.name || "",
@@ -1022,16 +1034,13 @@ async function contextTracks(contextUri) {
 
 async function searchAlbums(query) {
   if (!query.trim()) return;
-  dom.resultsTitle.textContent = `“${query.trim()}” 검색 결과`;
-  dom.resultCount.textContent = "검색 중";
-  dom.albumGrid.replaceChildren(makeEmpty("Spotify 앨범을 검색하고 있습니다.", true));
+  dom.resultsTitle.textContent = t("search.resultsTitle", { query: query.trim() });
+  dom.resultCount.textContent = t("search.searching");
+  dom.albumGrid.replaceChildren(makeEmpty(t("search.loading"), true));
   try {
     const data = await spotifyApi(`/search?${new URLSearchParams({ q: query.trim(), type: "album", limit: "10" })}`);
-    const albums = data.albums?.items || [];
-    dom.resultCount.textContent = `${albums.length} ALBUM${albums.length === 1 ? "" : "S"}`;
-    dom.albumGrid.replaceChildren();
-    if (!albums.length) dom.albumGrid.append(makeEmpty("검색 결과가 없습니다. 다른 검색어를 입력해 보세요."));
-    for (const album of albums) dom.albumGrid.append(makeAlbumCard(album));
+    lastSearch = { query: query.trim(), albums: data.albums?.items || [] };
+    renderSearchResults();
   } catch (error) {
     dom.resultCount.textContent = "";
     dom.albumGrid.replaceChildren(makeEmpty(error.message));
@@ -1039,28 +1048,41 @@ async function searchAlbums(query) {
   }
 }
 
+function renderSearchResults() {
+  if (!lastSearch) {
+    dom.resultsTitle.textContent = t("search.title");
+    return;
+  }
+  const { query, albums } = lastSearch;
+  dom.resultsTitle.textContent = t("search.resultsTitle", { query });
+  dom.resultCount.textContent = `${albums.length} ALBUM${albums.length === 1 ? "" : "S"}`;
+  dom.albumGrid.replaceChildren();
+  if (!albums.length) dom.albumGrid.append(makeEmpty(t("search.none")));
+  for (const album of albums) dom.albumGrid.append(makeAlbumCard(album));
+}
+
 function makeAlbumCard(album) {
   const card = make("article", "album-card");
   card.tabIndex = 0;
   card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `${album.name} 앨범 재생`);
+  card.setAttribute("aria-label", t("album.playAria", { name: album.name }));
   const coverWrap = make("div", "album-cover-wrap");
   const cover = make("img", "album-cover");
   cover.loading = "lazy";
-  cover.alt = `${album.name} 앨범 표지`;
+  cover.alt = t("album.coverAlt", { name: album.name });
   cover.src = album.images?.[0]?.url || "";
   coverWrap.append(cover);
   const external = make("a", "album-open-link", "↗");
   external.href = album.external_urls?.spotify || "https://open.spotify.com";
   external.target = "_blank";
   external.rel = "noreferrer";
-  external.title = "Spotify에서 앨범 보기";
-  external.setAttribute("aria-label", `${album.name} Spotify에서 열기`);
+  external.title = t("album.openSpotify");
+  external.setAttribute("aria-label", t("album.openSpotifyAria", { name: album.name }));
   external.addEventListener("click", (event) => event.stopPropagation());
   coverWrap.append(external);
   const play = make("button", "card-play", "▶");
   play.type = "button";
-  play.title = "앨범 재생";
+  play.title = t("album.play");
   play.addEventListener("click", (event) => { event.stopPropagation(); playContext(album.uri, album.name); });
   coverWrap.append(play);
   const name = make("div", "album-name", album.name);
@@ -1079,7 +1101,7 @@ async function pages(path, key) {
   items.push(...(page[key] || []));
   while (page.next) {
     const next = new URL(page.next);
-    if (next.origin !== "https://api.spotify.com") throw new Error("Spotify가 잘못된 페이지 주소를 반환했습니다.");
+    if (next.origin !== "https://api.spotify.com") throw new Error(t("error.badPageUrl"));
     page = await spotifyApi(next.href);
     items.push(...(page[key] || []));
   }
@@ -1088,13 +1110,24 @@ async function pages(path, key) {
 
 async function loadPlaylists() {
   if (!token) return;
-  dom.playlistGrid.replaceChildren(makeEmpty("플레이리스트를 불러오고 있습니다.", true));
+  dom.playlistGrid.replaceChildren(makeEmpty(t("playlists.loading"), true));
   const lists = await pages("/me/playlists?limit=50", "items");
   playlistCache = lists.filter((playlist) => playlist?.uri);
-  dom.playlistCount.textContent = `${playlistCache.length} LIST${playlistCache.length === 1 ? "" : "S"}`;
+  playlistsLoaded = true;
+  renderPlaylists();
+}
+
+function renderPlaylists() {
   dom.playlistGrid.replaceChildren();
   dom.shortcuts.replaceChildren();
-  if (!playlistCache.length) dom.playlistGrid.append(makeEmpty("Spotify 계정에 플레이리스트가 없습니다."));
+  if (!token || !playlistsLoaded) {
+    dom.playlistCount.textContent = "";
+    dom.shortcuts.append(make("div", "sidebar-empty", t("sidebar.empty")));
+    dom.playlistGrid.append(makeEmpty(t("playlists.connectFirst")));
+    return;
+  }
+  dom.playlistCount.textContent = `${playlistCache.length} LIST${playlistCache.length === 1 ? "" : "S"}`;
+  if (!playlistCache.length) dom.playlistGrid.append(makeEmpty(t("playlists.none")));
   for (const playlist of playlistCache) {
     dom.playlistGrid.append(makePlaylistCard(playlist));
     dom.shortcuts.append(makePlaylistShortcut(playlist));
@@ -1105,25 +1138,25 @@ function makePlaylistCard(playlist) {
   const card = make("article", "playlist-card");
   card.tabIndex = 0;
   card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `${playlist.name} 플레이리스트 재생`);
+  card.setAttribute("aria-label", t("playlist.playAria", { name: playlist.name }));
   const art = make("img", "playlist-art");
   art.loading = "lazy";
   art.alt = "";
   art.src = playlist.images?.[0]?.url || "";
   const copy = make("div", "playlist-copy");
   const trackTotal = playlist.items?.total ?? playlist.tracks?.total;
-  copy.append(make("strong", "", playlist.name), make("span", "", `${trackTotal ?? "—"}곡 · PLAYLIST`));
+  copy.append(make("strong", "", playlist.name), make("span", "", t("playlist.trackCount", { count: trackTotal ?? "—" })));
   const button = make("button", "playlist-play");
   button.type = "button";
-  button.title = "플레이리스트 재생";
-  button.setAttribute("aria-label", `${playlist.name} 재생`);
+  button.title = t("playlist.play");
+  button.setAttribute("aria-label", t("playlist.playNamed", { name: playlist.name }));
   button.addEventListener("click", (event) => { event.stopPropagation(); playContext(playlist.uri, playlist.name); });
   const external = make("a", "playlist-open-link", "↗");
   external.href = playlist.external_urls?.spotify || "https://open.spotify.com";
   external.target = "_blank";
   external.rel = "noreferrer";
-  external.title = "Spotify에서 플레이리스트 보기";
-  external.setAttribute("aria-label", `${playlist.name} Spotify에서 열기`);
+  external.title = t("playlist.openSpotify");
+  external.setAttribute("aria-label", t("album.openSpotifyAria", { name: playlist.name }));
   external.addEventListener("click", (event) => event.stopPropagation());
   card.append(art, copy, external, button);
   card.addEventListener("click", () => playContext(playlist.uri, playlist.name));
@@ -1136,7 +1169,7 @@ function makePlaylistCard(playlist) {
 function makePlaylistShortcut(playlist) {
   const button = make("button", "shortcut");
   button.type = "button";
-  button.title = `${playlist.name} 재생`;
+  button.title = t("playlist.playNamed", { name: playlist.name });
   const art = make("img", "shortcut-art");
   art.alt = "";
   art.loading = "lazy";
@@ -1155,19 +1188,19 @@ function makeEmpty(message, loading = false) {
 
 function makeWelcome() {
   const node = make("div", "empty-state welcome-state");
-  node.append(make("div", "empty-symbol", "◌"), make("strong", "", "검색으로 시작해 보세요"));
-  node.append(make("span", "", "좋아하는 앨범이나 아티스트를 입력하면\nSpotify 앨범을 찾아드려요."));
+  node.append(make("div", "empty-symbol", "◌"), make("strong", "", t("search.welcomeTitle")));
+  node.append(make("span", "", t("search.welcomeCopy")));
   return node;
 }
 
 function openAccountDialog() {
   const connected = Boolean(token);
-  dom.dialogTitle.textContent = connected ? "Spotify 연결 관리" : "Spotify 연결";
+  dom.dialogTitle.textContent = t(connected ? "account.manageTitle" : "account.title");
   dom.dialogCopy.textContent = connected
-    ? `현재 ${token?.profile?.display_name || "Spotify 계정"}으로 연결되어 있습니다. 다른 계정을 선택하거나 이 탭의 연결을 해제할 수 있습니다.`
-    : "Premium 계정으로 연결해 앨범과 플레이리스트를 이 브라우저에서 재생하세요.";
+    ? t("account.connectedCopy", { name: token?.profile?.display_name || t("account.defaultName") })
+    : t("account.copy");
   dom.dialogDisconnect.hidden = !connected;
-  dom.dialogAction.textContent = connected ? "다른 계정으로 연결" : "Spotify 연결";
+  dom.dialogAction.textContent = t(connected ? "account.switch" : "connect.connect");
   dom.dialogAction.dataset.action = connected ? "switch" : "login";
   dom.dialog.showModal();
 }
@@ -1175,6 +1208,7 @@ function openAccountDialog() {
 async function openSettingsDialog() {
   updateGapUi();
   updateSpotifySettingsUi();
+  dom.languageSelect.value = language;
   dom.settings.showModal();
   await refreshBrowserOptions();
   await refreshDeviceOptions();
@@ -1185,7 +1219,7 @@ function setView(view) {
   const playlists = view === "playlists";
   dom.searchView.hidden = playlists;
   dom.playlistsView.hidden = !playlists;
-  dom.crumb.textContent = playlists ? "내 플레이리스트" : "앨범 찾기";
+  dom.crumb.textContent = t(playlists ? "nav.playlists" : "nav.search");
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   if (playlists && token && playlistCache.length === 0) loadPlaylists().catch((error) => showToast(error.message, "error"));
 }
@@ -1199,27 +1233,35 @@ dom.connect.addEventListener("click", () => {
   if (token) { openAccountDialog(); return; }
   if (!spotifyConfig.clientId) {
     openSettingsDialog().catch((error) => showToast(error.message, "error"));
-    showToast("설정에서 Spotify Client ID를 먼저 입력해 주세요.", "warning");
+    showToast(t("toast.enterClientIdFirst"), "warning");
     return;
   }
   startAuthorization().catch((error) => showToast(error.message, "error"));
 });
 dom.settingsButton.addEventListener("click", () => openSettingsDialog().catch((error) => showToast(error.message, "error")));
-dom.helpButton.addEventListener("click", () => dom.help.showModal());
+dom.helpButton.addEventListener("click", () => {
+  const helpPage = language === "en" ? "/help-en.html" : "/help.html";
+  if (new URL(dom.helpFrame.src, location.href).pathname !== helpPage) dom.helpFrame.src = helpPage;
+  dom.help.showModal();
+});
+dom.languageToggle.addEventListener("click", () => setLanguage(language === "ko" ? "en" : "ko"));
+window.addEventListener("albumdeck:languagechange", refreshLanguage);
 dom.helpClose.addEventListener("click", () => dom.help.close());
 dom.refreshDevices.addEventListener("click", refreshDeviceOptions);
 dom.deviceSelect.addEventListener("change", () => { dom.localOutput.hidden = dom.deviceSelect.value !== "browser"; });
 dom.openSoundSettings.addEventListener("click", () => {
   if (runtimePlatform === "darwin") {
-    showToast("시스템 설정 → 사운드 → 출력에서 장치를 선택하세요. macOS 기본 설정은 Safari가 아닌 시스템 전체 출력을 변경합니다.", "warning", 9000);
+    showToast(t("toast.macOutput"), "warning", 9000);
     return;
   }
   if (runtimePlatform === "win32") window.location.href = "ms-settings:apps-volume";
   showToast(runtimePlatform === "win32"
-    ? "Windows 설정에서 사용 중인 브라우저의 출력 장치를 선택하세요."
-    : "운영체제의 사운드 설정에서 출력 장치를 선택하세요.", "warning", 7000);
+    ? t("toast.windowsOutput")
+    : t("toast.otherOutput"), "warning", 7000);
 });
 dom.gapInput.addEventListener("input", () => { dom.gapValue.textContent = gapLabel(dom.gapInput.value); });
+// The language applies immediately so it can be changed before the Spotify settings are complete.
+dom.languageSelect.addEventListener("change", () => setLanguage(dom.languageSelect.value));
 dom.settingsCancel.addEventListener("click", () => {
   updateGapUi();
   updateSpotifySettingsUi();
@@ -1250,8 +1292,8 @@ dom.settingsSave.addEventListener("click", () => {
     updateOutputLabel();
     dom.settings.close();
     showToast(clientChanged && !token
-      ? "Spotify 앱 설정을 저장했습니다. Spotify에 다시 연결해 주세요."
-      : `${targetDevice.name} · 곡간 무음 ${gapLabel(gapSeconds)}로 설정했습니다.`);
+      ? t("toast.appSettingsSaved")
+      : t("toast.settingsSaved", { device: usesBrowserPlayer() ? t("device.thisBrowser") : targetDevice.name, gap: gapLabel(gapSeconds) }));
   } catch (error) {
     showToast(error.message, "error", 7000);
   }
@@ -1260,14 +1302,14 @@ dom.dialogCancel.addEventListener("click", () => dom.dialog.close());
 dom.dialogDisconnect.addEventListener("click", () => {
   dom.dialog.close();
   clearSession();
-  showToast("이 탭의 Spotify 연결 정보를 지웠습니다.");
+  showToast(t("toast.disconnected"));
 });
 dom.dialogAction.addEventListener("click", async () => {
   dom.dialog.close();
   if (dom.dialogAction.dataset.action === "switch") clearSession();
   if (!spotifyConfig.clientId) {
     await openSettingsDialog();
-    showToast("Spotify Client ID를 입력한 뒤 저장해 주세요.", "warning");
+    showToast(t("toast.enterClientIdSave"), "warning");
     return;
   }
   startAuthorization().catch((error) => showToast(error.message, "error"));
@@ -1308,6 +1350,37 @@ window.addEventListener("keydown", (event) => {
   if (event.code === "Space" && player) { event.preventDefault(); togglePlayback().catch(() => {}); }
 });
 
+// Re-renders every language-dependent part of the page after the UI language changes.
+function refreshLanguage() {
+  applyTranslations();
+  dom.languageSelect.value = language;
+  dom.helpOpenWindow.href = language === "en" ? "/help-en.html" : "/help.html";
+  dom.crumb.textContent = t(activeView === "playlists" ? "nav.playlists" : "nav.search");
+  updateGapUi();
+  dom.output.textContent = usesBrowserPlayer() ? t("device.browserOutput") : `${targetDevice.name} · Spotify Connect`;
+  dom.outputLabel.textContent = usesBrowserPlayer() ? t("device.thisBrowser") : targetDevice.name;
+  renderPlatformOutputHelp();
+  for (const option of dom.browserSelect.options) {
+    if (option.value === "auto") option.textContent = t("browser.auto");
+    if (option.value === "system") option.textContent = t("browser.system");
+  }
+  for (const option of dom.deviceSelect.options) {
+    if (option.value === "browser") option.textContent = t("device.browserOption");
+  }
+  updateTagFileSummary();
+  if (busy) dom.connect.textContent = t("connect.connecting");
+  else dom.connect.textContent = t(token ? "connect.connected" : "connect.connect");
+  if (currentTrack(currentState)) renderState(currentState);
+  else {
+    renderStreamQuality(null);
+    updateConnection(Boolean(token));
+  }
+  renderContextQueue(queueContextLabel);
+  renderPlaylists();
+  if (lastSearch) renderSearchResults();
+  else if (dom.albumGrid.querySelector(".welcome-state")) dom.albumGrid.replaceChildren(makeWelcome());
+}
+
 async function boot() {
   if (processOAuthError()) return;
   if (location.search.includes("code=")) { await finishAuthorization(); return; }
@@ -1318,7 +1391,7 @@ async function boot() {
     await initializeConnectedApp();
   } catch (error) {
     showToast(error.message, "error", 7000);
-    if (/401|인증이 만료|invalid_grant/i.test(error.message)) clearSession();
+    if (error.code === "auth_expired" || /401|invalid_grant/i.test(error.message)) clearSession();
   }
 }
 
@@ -1326,7 +1399,7 @@ async function openMdTransfer() {
   const { openMdTransferDialog } = await import("/md-transfer.js");
   openMdTransferDialog({
     tracks: tagTracks.length ? tagTracks : queueTracks,
-    contextLabel: queueContextLabel,
+    contextLabel: queueContextLabel || t("queue.defaultTitle"),
     id3TagFor,
     showToast,
   });
@@ -1334,7 +1407,7 @@ async function openMdTransfer() {
 
 function openTagDialog() {
   if (!(tagTracks.length || queueTracks.length)) {
-    showToast("먼저 앨범 또는 플레이리스트를 선택하세요.", "warning");
+    showToast(t("toast.selectContextFirst"), "warning");
     return;
   }
   tagFileHandles = [];
@@ -1371,7 +1444,7 @@ async function chooseTagFiles() {
 
 function updateTagFileSummary() {
   const count = tagFiles.length;
-  dom.tagFileSummary.textContent = count ? `${count}개 파일 선택됨 · 파일명 순서로 매칭` : "선택된 파일 없음";
+  dom.tagFileSummary.textContent = count ? t("tag.filesSelected", { count }) : t("tag.noFiles");
   dom.applyTags.disabled = !count || !(tagTracks.length || queueTracks.length);
 }
 
@@ -1385,16 +1458,16 @@ async function audioFileDuration(file) {
     const audio = new Audio();
     audio.preload = "metadata";
     const duration = await new Promise((resolveDuration, reject) => {
-      const timeout = window.setTimeout(() => reject(new Error(`${file.name}: 재생 시간 판독 시간 초과`)), 10000);
+      const timeout = window.setTimeout(() => reject(new Error(t("tag.durationTimeout", { name: file.name }))), 10000);
       const finish = () => {
         window.clearTimeout(timeout);
         const value = Number(audio.duration);
         URL.revokeObjectURL(url);
         if (Number.isFinite(value) && value > 0) resolveDuration(value * 1000);
-        else reject(new Error(`${file.name}: 재생 시간을 읽을 수 없습니다.`));
+        else reject(new Error(t("tag.durationUnreadable", { name: file.name })));
       };
       audio.addEventListener("loadedmetadata", finish, { once: true });
-      audio.addEventListener("error", () => { window.clearTimeout(timeout); reject(new Error(`${file.name}: MP3 파일을 읽을 수 없습니다.`)); }, { once: true });
+      audio.addEventListener("error", () => { window.clearTimeout(timeout); reject(new Error(t("tag.unreadable", { name: file.name }))); }, { once: true });
       audio.src = url;
       audio.load();
     });
@@ -1434,7 +1507,7 @@ function id3TagFor(track, index, total) {
   const frames = [
     utf16Frame("TIT2", track.name),
     utf16Frame("TPE1", track.artist),
-    utf16Frame("TALB", track.album || queueContextLabel),
+    utf16Frame("TALB", track.album || queueContextLabel || t("queue.defaultTitle")),
     utf16Frame("TRCK", `${trackNumber}/${trackTotal}`),
   ];
   if (track.album_artist) frames.push(utf16Frame("TPE2", track.album_artist));
@@ -1467,25 +1540,26 @@ async function applyId3Tags() {
   const files = sortTagFiles(tagFiles);
   const total = Math.min(files.length, tracks.length);
   const results = [];
+  let processed = 0;
   dom.applyTags.disabled = true;
   dom.tagProgress.hidden = false;
   for (let index = 0; index < total; index++) {
     const file = files[index];
     const track = tracks[index];
-    dom.tagProgress.textContent = `${index + 1}/${total} 확인 중: ${file.name}`;
+    dom.tagProgress.textContent = t("tag.checking", { number: index + 1, total, name: file.name });
     let duration;
     try { duration = await audioFileDuration(file); }
-    catch (error) { results.push(`건너뜀 · ${file.name} (${error.message})`); continue; }
+    catch (error) { results.push(t("tag.skipped", { name: file.name, reason: error.message })); continue; }
     const difference = Math.abs(duration - Number(track.duration_ms || 0));
     if (difference > 10000) {
-      results.push(`건너뜀 · ${file.name} (길이 차이 ${Math.round(difference / 1000)}초)`);
+      results.push(t("tag.skippedDuration", { name: file.name, seconds: Math.round(difference / 1000) }));
       continue;
     }
     let blob;
     try {
       blob = await taggedBlob(file, track, index, total);
     } catch (error) {
-      results.push(`실패 · ${file.name} (파일 데이터를 읽을 수 없음: ${error.message})`);
+      results.push(t("tag.failedRead", { name: file.name, reason: error.message }));
       continue;
     }
     if (tagFileHandles[index]?.createWritable) {
@@ -1493,32 +1567,34 @@ async function applyId3Tags() {
         const handle = tagFileHandles[index];
         const writable = await Promise.race([
           handle.createWritable(),
-          new Promise((_, reject) => window.setTimeout(() => reject(new Error("파일 쓰기 준비 시간 초과")), 10000)),
+          new Promise((_, reject) => window.setTimeout(() => reject(new Error(t("tag.writePrepareTimeout"))), 10000)),
         ]);
         await Promise.race([
           writable.write(blob),
-          new Promise((_, reject) => window.setTimeout(() => reject(new Error("파일 쓰기 시간 초과")), 30000)),
+          new Promise((_, reject) => window.setTimeout(() => reject(new Error(t("tag.writeTimeout"))), 30000)),
         ]);
         if (writable.truncate) await writable.truncate(blob.size);
         await writable.close();
-        results.push(`완료 · ${file.name}`);
+        results.push(t("tag.done", { name: file.name }));
+        processed++;
       } catch (error) {
-        results.push(`실패 · ${file.name} (${error.message})`);
+        results.push(t("tag.failed", { name: file.name, reason: error.message }));
       }
     } else {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url; link.download = file.name; link.click();
       URL.revokeObjectURL(url);
-      results.push(`다운로드 · ${file.name}`);
+      results.push(t("tag.downloaded", { name: file.name }));
+      processed++;
     }
   }
-  for (let index = total; index < files.length; index++) results.push(`건너뜀 · ${files[index].name} (Spotify 곡보다 파일이 많음)`);
+  for (let index = total; index < files.length; index++) results.push(t("tag.extraFile", { name: files[index].name }));
   dom.tagProgress.textContent = results.join("\n");
   dom.applyTags.disabled = false;
-  showToast(`${results.filter((line) => line.startsWith("완료") || line.startsWith("다운로드")).length}개 파일 처리가 완료되었습니다.`, "success", 7000);
+  showToast(t("tag.finished", { count: processed }), "success", 7000);
 }
 
 window.setInterval(pollPlayer, 1000);
-updateGapUi();
+refreshLanguage();
 boot();

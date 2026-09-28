@@ -21,28 +21,29 @@
     <div class="ambient ambient-two"></div>
     <div class="app-shell">
       <aside class="sidebar">
-        <a class="brand" href="/" aria-label="Album Deck 홈">
+        <a class="brand" href="/" aria-label="Album Deck 홈" data-i18n-attr="aria-label:brand.home">
           <span class="brand-mark"><i></i><i></i><i></i></span>
           <span>album<span class="brand-light">deck</span></span>
         </a>
 
         <div class="sidebar-label">LIBRARY</div>
-        <nav class="main-nav" aria-label="주 메뉴">
-          <button class="nav-item active" data-view="search"><span class="nav-icon search-icon"></span><span>앨범 찾기</span></button>
-          <button class="nav-item" data-view="playlists"><span class="nav-icon list-icon"></span><span>내 플레이리스트</span></button>
+        <nav class="main-nav" aria-label="주 메뉴" data-i18n-attr="aria-label:nav.main">
+          <button class="nav-item active" data-view="search"><span class="nav-icon search-icon"></span><span data-i18n="nav.search">앨범 찾기</span></button>
+          <button class="nav-item" data-view="playlists"><span class="nav-icon list-icon"></span><span data-i18n="nav.playlists">내 플레이리스트</span></button>
         </nav>
 
         <div class="sidebar-rule"></div>
         <div class="collection-heading">
-          <span class="sidebar-label">SPOTIFY에서 고르기</span>
-          <button class="icon-button refresh-button" id="refreshPlaylists" title="플레이리스트 새로고침" aria-label="플레이리스트 새로고침">↻</button>
+          <span class="sidebar-label" data-i18n="sidebar.pick">SPOTIFY에서 고르기</span>
+          <button class="icon-button refresh-button" id="refreshPlaylists" title="플레이리스트 새로고침" aria-label="플레이리스트 새로고침" data-i18n-attr="title:sidebar.refresh;aria-label:sidebar.refresh">↻</button>
         </div>
         <div class="playlist-shortcuts" id="playlistShortcuts">
-          <div class="sidebar-empty">Spotify에 연결하면<br />플레이리스트가 나타납니다.</div>
+          <div class="sidebar-empty" data-i18n="sidebar.empty">Spotify에 연결하면
+플레이리스트가 나타납니다.</div>
         </div>
 
         <div class="sidebar-bottom">
-          <button class="spotify-attribution" id="spotifyAttribution" hidden>Spotify에서 재생 중 ↗</button>
+          <button class="spotify-attribution" id="spotifyAttribution" data-i18n="sidebar.attribution" hidden>Spotify에서 재생 중 ↗</button>
         </div>
       </aside>
 
@@ -50,16 +51,17 @@
         <header class="topbar">
           <div class="breadcrumbs"><span>YOUR LIBRARY</span><b>/</b><strong id="crumbCurrent">앨범 찾기</strong></div>
           <div class="top-actions">
-            <button class="settings-button md-button" id="mdTransferButton" type="button" title="MD에 기록된 곡을 PC로 가져와 MP3로 저장">
-              <span class="md-glyph" aria-hidden="true"></span><span class="settings-button-label">MD 가져오기</span>
+            <button class="settings-button md-button" id="mdTransferButton" type="button" title="MD에 기록된 곡을 PC로 가져와 MP3로 저장" data-i18n-attr="title:top.mdTransferTitle">
+              <span class="md-glyph" aria-hidden="true"></span><span class="settings-button-label" data-i18n="top.mdTransfer">MD 가져오기</span>
             </button>
-            <button class="settings-button help-button" id="helpButton" type="button" title="Album Deck 사용설명서">
-              <span class="help-glyph" aria-hidden="true">?</span><span class="help-button-label">도움말</span>
+            <button class="settings-button help-button" id="helpButton" type="button" title="Album Deck 사용설명서" data-i18n-attr="title:top.helpTitle">
+              <span class="help-glyph" aria-hidden="true">?</span><span class="help-button-label" data-i18n="top.help">도움말</span>
             </button>
-            <button class="settings-button" id="settingsButton" type="button" title="Spotify 및 재생 설정">
+            <button class="settings-button" id="settingsButton" type="button" title="Spotify 및 재생 설정" data-i18n-attr="title:top.settingsTitle">
               <span class="settings-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.64 8.94a1.7 1.7 0 0 0-.34-1.88L4.24 7l2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10.04 3H10V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 7l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"></path></svg></span>
-              <span class="settings-button-label">설정</span><b id="gapBadge">2초</b>
+              <span class="settings-button-label" data-i18n="top.settings">설정</span><b id="gapBadge">2초</b>
             </button>
+            <button class="settings-button language-button" id="languageToggle" type="button" title="Switch to English" data-i18n-attr="title:language.toggleTitle" lang="en"><span data-i18n="language.toggle">EN</span></button>
             <span class="premium-note"><span class="tiny-wave">≈</span> PREMIUM PLAYER</span>
             <button class="connect-button" id="connectButton"><span class="connect-glyph">↗</span> Spotify 연결</button>
           </div>
@@ -69,8 +71,8 @@
           <div class="hero-row">
             <div class="hero-copy">
               <div class="eyebrow"><span class="eyebrow-line"></span> FIND YOUR NEXT SIDE</div>
-              <h1>오늘 들을<br /><em>앨범을 찾아요.</em></h1>
-              <p>앨범을 골라 이 플레이어에서 바로 재생하세요.</p>
+              <h1 data-i18n-html="search.heroHtml">오늘 들을<br /><em>앨범을 찾아요.</em></h1>
+              <p data-i18n="search.heroCopy">앨범을 골라 이 플레이어에서 바로 재생하세요.</p>
             </div>
             <div class="hero-art" aria-hidden="true">
               <div class="hero-disc"><div class="disc-label"><span>AD</span></div></div>
@@ -82,19 +84,20 @@
 
           <form class="search-form" id="searchForm">
             <span class="search-form-icon"></span>
-            <input id="searchInput" type="search" autocomplete="off" placeholder="앨범명 또는 아티스트를 검색하세요" aria-label="앨범 검색" />
+            <input id="searchInput" type="search" autocomplete="off" placeholder="앨범명 또는 아티스트를 검색하세요" aria-label="앨범 검색" data-i18n-attr="placeholder:search.placeholder;aria-label:search.aria" />
             <kbd>ENTER</kbd>
           </form>
 
           <div class="section-heading results-heading">
-            <div><span class="section-kicker">DISCOVER</span><h2 id="resultsTitle">앨범 검색</h2></div>
+            <div><span class="section-kicker">DISCOVER</span><h2 id="resultsTitle" data-i18n="search.title">앨범 검색</h2></div>
             <span class="result-count" id="resultCount"></span>
           </div>
           <div class="album-grid" id="albumGrid">
             <div class="empty-state welcome-state">
               <div class="empty-symbol">◌</div>
-              <strong>검색으로 시작해 보세요</strong>
-              <span>좋아하는 앨범이나 아티스트를 입력하면<br />Spotify 앨범을 찾아드려요.</span>
+              <strong data-i18n="search.welcomeTitle">검색으로 시작해 보세요</strong>
+              <span data-i18n="search.welcomeCopy">좋아하는 앨범이나 아티스트를 입력하면
+Spotify 앨범을 찾아드려요.</span>
             </div>
           </div>
         </section>
@@ -103,8 +106,8 @@
           <div class="page-intro">
             <div class="hero-copy">
               <div class="eyebrow"><span class="eyebrow-line"></span> MADE BY YOU</div>
-              <h1>내 플레이<br /><em>리스트.</em></h1>
-              <p>Spotify 플레이리스트를 선택해 이곳에서 재생하세요.</p>
+              <h1 data-i18n-html="playlists.heroHtml">내 플레이<br /><em>리스트.</em></h1>
+              <p data-i18n="playlists.heroCopy">Spotify 플레이리스트를 선택해 이곳에서 재생하세요.</p>
             </div>
             <div class="hero-art" aria-hidden="true">
               <div class="hero-disc"><div class="disc-label"><span>AD</span></div></div>
@@ -114,45 +117,46 @@
             </div>
           </div>
           <div class="section-heading playlist-heading">
-            <div><span class="section-kicker">YOUR COLLECTION</span><h2>플레이리스트</h2></div>
+            <div><span class="section-kicker">YOUR COLLECTION</span><h2 data-i18n="playlists.title">플레이리스트</h2></div>
             <span class="result-count" id="playlistCount"></span>
           </div>
           <div class="playlist-grid" id="playlistGrid">
-            <div class="empty-state"><div class="loader"></div><span>Spotify에 연결해 주세요.</span></div>
+            <div class="empty-state"><div class="loader"></div><span data-i18n="playlists.connectFirst">Spotify에 연결해 주세요.</span></div>
           </div>
         </section>
 
         <footer class="content-footer">
-          <span>음악과 앨범 정보는 Spotify에서 제공합니다.</span>
+          <span data-i18n="footer.credit">음악과 앨범 정보는 Spotify에서 제공합니다.</span>
           <span>PERSONAL LISTENING · <a href="https://www.spotify.com" target="_blank" rel="noreferrer">SPOTIFY ↗</a></span>
         </footer>
       </main>
 
-      <aside class="now-playing-panel" aria-label="재생 중인 앨범">
+      <aside class="now-playing-panel" aria-label="재생 중인 앨범" data-i18n-attr="aria-label:panel.aria">
         <div class="panel-topline"><span>NOW PLAYING</span><span class="equalizer" id="equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
         <div class="now-art-frame" id="nowArtFrame">
           <div class="art-placeholder"><span>AD</span></div>
-          <img class="now-art" id="nowArt" alt="현재 재생 중인 앨범 표지" hidden />
-          <a class="art-link" id="artLink" href="https://open.spotify.com" target="_blank" rel="noreferrer" title="Spotify에서 열기">↗</a>
+          <img class="now-art" id="nowArt" alt="현재 재생 중인 앨범 표지" data-i18n-attr="alt:panel.artAlt" hidden />
+          <a class="art-link" id="artLink" href="https://open.spotify.com" target="_blank" rel="noreferrer" title="Spotify에서 열기" data-i18n-attr="title:panel.openSpotify">↗</a>
         </div>
         <div class="track-metadata">
           <div class="track-kind" id="trackKind">READY WHEN YOU ARE</div>
-          <h2 id="nowTitle">플레이어가<br />기다리고 있어요</h2>
-          <p id="nowArtist">앨범이나 플레이리스트를 선택하세요.</p>
+          <h2 id="nowTitle" data-i18n-html="panel.idleTitleHtml">플레이어가<br />기다리고 있어요</h2>
+          <p id="nowArtist" data-i18n="panel.idleCopy">앨범이나 플레이리스트를 선택하세요.</p>
         </div>
         <div class="panel-separator"></div>
-        <div class="deck-status-row"><span>PLAYER STATUS</span><span id="playerStatus">연결 대기 중</span></div>
+        <div class="deck-status-row"><span>PLAYER STATUS</span><span id="playerStatus" data-i18n="status.waiting">연결 대기 중</span></div>
         <div class="deck-status-row"><span>OUTPUT</span><span id="outputStatus">이 브라우저</span></div>
-        <div class="deck-status-row"><span>오디오 형식</span><span id="streamFormat">—</span></div>
-        <div class="deck-status-row"><span>비트레이트</span><span id="streamBitrate">—</span></div>
+        <div class="deck-status-row"><span data-i18n="panel.format">오디오 형식</span><span id="streamFormat">—</span></div>
+        <div class="deck-status-row"><span data-i18n="panel.bitrate">비트레이트</span><span id="streamBitrate">—</span></div>
         <p class="stream-quality-note" id="streamQualityNote" hidden></p>
         <section class="context-queue" aria-labelledby="contextQueueTitle">
           <div class="context-queue-heading">
             <div><span>SELECTED TRACKS</span><strong id="contextQueueTitle">선택한 음악</strong></div>
-            <div class="context-queue-actions"><span id="contextQueueCount">0곡</span><button class="text-button" id="tagEditorButton" type="button" disabled>ID3 태그</button></div>
+            <div class="context-queue-actions"><span id="contextQueueCount">0곡</span><button class="text-button" id="tagEditorButton" type="button" data-i18n="queue.tagButton" disabled>ID3 태그</button></div>
           </div>
           <div class="context-track-list" id="contextTrackList">
-            <div class="context-queue-empty">앨범이나 플레이리스트를 선택하면<br />곡 목록이 표시됩니다.</div>
+            <div class="context-queue-empty" data-i18n="queue.empty">앨범이나 플레이리스트를 선택하면
+곡 목록이 표시됩니다.</div>
           </div>
         </section>
       </aside>
@@ -161,18 +165,18 @@
     <footer class="player-bar" id="playerBar">
       <div class="player-track">
         <div class="mini-art" id="miniArt"><span>AD</span></div>
-        <div class="mini-track-copy"><strong id="miniTitle">아직 재생 중인 곡이 없습니다</strong><span id="miniArtist">앨범 또는 플레이리스트를 선택하세요</span><span class="mini-stream-quality" id="miniStreamQuality" hidden></span></div>
-        <a class="icon-button mini-spotify-link" id="miniSpotifyLink" title="Spotify에서 열기" aria-label="Spotify에서 열기" target="_blank" rel="noreferrer" hidden>↗</a>
+        <div class="mini-track-copy"><strong id="miniTitle" data-i18n="mini.idleTitle">아직 재생 중인 곡이 없습니다</strong><span id="miniArtist" data-i18n="mini.idleCopy">앨범 또는 플레이리스트를 선택하세요</span><span class="mini-stream-quality" id="miniStreamQuality" hidden></span></div>
+        <a class="icon-button mini-spotify-link" id="miniSpotifyLink" title="Spotify에서 열기" aria-label="Spotify에서 열기" data-i18n-attr="title:panel.openSpotify;aria-label:panel.openSpotify" target="_blank" rel="noreferrer" hidden>↗</a>
       </div>
       <div class="transport">
         <div class="transport-buttons">
-          <button class="transport-button" id="previousButton" aria-label="이전 곡" title="이전 곡">⏮</button>
-          <button class="play-button" id="playButton" aria-label="재생" title="재생" disabled><span class="play-triangle">▶</span></button>
-          <button class="transport-button" id="nextButton" aria-label="다음 곡" title="다음 곡">⏭</button>
+          <button class="transport-button" id="previousButton" aria-label="이전 곡" title="이전 곡" data-i18n-attr="aria-label:player.previous;title:player.previous">⏮</button>
+          <button class="play-button" id="playButton" aria-label="재생" title="재생" data-i18n-attr="aria-label:player.play;title:player.play" disabled><span class="play-triangle">▶</span></button>
+          <button class="transport-button" id="nextButton" aria-label="다음 곡" title="다음 곡" data-i18n-attr="aria-label:player.next;title:player.next">⏭</button>
         </div>
         <div class="timeline">
           <span class="time-label" id="elapsedTime">0:00</span>
-          <input type="range" id="seekSlider" min="0" max="1000" value="0" aria-label="재생 위치" disabled />
+          <input type="range" id="seekSlider" min="0" max="1000" value="0" aria-label="재생 위치" data-i18n-attr="aria-label:player.seek" disabled />
           <span class="time-label" id="durationTime">0:00</span>
         </div>
       </div>
@@ -184,99 +188,107 @@
         <span class="tool-glyph volume-glyph" aria-hidden="true">
           <svg viewBox="0 0 24 24" focusable="false"><path d="M11 5 6.5 9H3v6h3.5l4.5 4V5Z"></path><path d="M15 9.5a4 4 0 0 1 0 5M17.5 6.5a8 8 0 0 1 0 11"></path></svg>
         </span>
-        <input type="range" id="volumeSlider" min="0" max="100" value="100" aria-label="볼륨" disabled />
+        <input type="range" id="volumeSlider" min="0" max="100" value="100" aria-label="볼륨" data-i18n-attr="aria-label:player.volume" disabled />
       </div>
     </footer>
 
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
     <dialog class="help-dialog" id="helpDialog">
       <div class="help-dialog-toolbar">
-        <div><span class="help-glyph" aria-hidden="true">?</span><strong>Album Deck 사용설명서</strong></div>
+        <div><span class="help-glyph" aria-hidden="true">?</span><strong data-i18n="help.title">Album Deck 사용설명서</strong></div>
         <div class="help-dialog-actions">
-          <a class="quiet-button" href="/help.html" target="_blank" rel="noreferrer">새 창에서 열기 ↗</a>
-          <button class="connect-button" id="helpClose" type="button">닫기</button>
+          <a class="quiet-button" id="helpOpenWindow" href="/help.html" target="_blank" rel="noreferrer" data-i18n="help.openWindow">새 창에서 열기 ↗</a>
+          <button class="connect-button" id="helpClose" type="button" data-i18n="common.close">닫기</button>
         </div>
       </div>
-      <iframe src="/help.html" title="Album Deck 사용설명서"></iframe>
+      <iframe id="helpFrame" src="/help.html" title="Album Deck 사용설명서" data-i18n-attr="title:help.title"></iframe>
     </dialog>
     <dialog class="account-dialog" id="accountDialog">
       <div class="dialog-mark"><span class="brand-mark"><i></i><i></i><i></i></span></div>
-      <h2 id="dialogTitle">Spotify 연결</h2>
-      <p id="dialogCopy">Premium 계정으로 연결해 이 브라우저에서 재생하세요.</p>
+      <h2 id="dialogTitle" data-i18n="account.title">Spotify 연결</h2>
+      <p id="dialogCopy" data-i18n="account.copy">Premium 계정으로 연결해 이 브라우저에서 재생하세요.</p>
       <div class="dialog-actions">
-        <button class="quiet-button" id="dialogCancel">닫기</button>
-        <button class="quiet-button" id="dialogDisconnect" hidden>연결 해제</button>
-        <button class="connect-button" id="dialogAction">Spotify 연결</button>
+        <button class="quiet-button" id="dialogCancel" data-i18n="common.close">닫기</button>
+        <button class="quiet-button" id="dialogDisconnect" data-i18n="account.disconnect" hidden>연결 해제</button>
+        <button class="connect-button" id="dialogAction" data-i18n="connect.connect">Spotify 연결</button>
       </div>
     </dialog>
     <dialog class="account-dialog settings-dialog" id="settingsDialog">
       <div class="settings-heading"><div class="dialog-mark">⚙</div><span>APP SETTINGS</span></div>
-      <h2>설정</h2>
-      <p>Spotify 연결 정보와 재생 장치, 곡 사이의 무음 시간을 관리합니다.</p>
+      <h2 data-i18n="settings.title">설정</h2>
+      <p data-i18n="settings.copy">Spotify 연결 정보와 재생 장치, 곡 사이의 무음 시간을 관리합니다.</p>
       <section class="spotify-setting" aria-labelledby="spotifySettingTitle">
         <div class="setting-label-row"><strong id="spotifySettingTitle">Spotify Developer API</strong></div>
         <label for="clientIdInput">Client ID</label>
-        <input id="clientIdInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Spotify 앱의 Client ID" />
+        <input id="clientIdInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Spotify 앱의 Client ID" data-i18n-attr="placeholder:settings.clientIdPlaceholder" />
         <label for="redirectUriInput">Redirect URI</label>
         <input id="redirectUriInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" />
-        <p class="field-help">Spotify Dashboard에도 위 Redirect URI를 동일하게 등록하세요. Client Secret은 필요하지 않습니다.</p>
+        <p class="field-help" data-i18n="settings.redirectHelp">Spotify Dashboard에도 위 Redirect URI를 동일하게 등록하세요. Client Secret은 필요하지 않습니다.</p>
       </section>
       <div class="browser-setting">
-        <div class="setting-label-row"><label for="browserSelect">기본 브라우저</label></div>
+        <div class="setting-label-row"><label for="browserSelect" data-i18n="settings.browser">기본 브라우저</label></div>
         <select id="browserSelect">
-          <option value="auto">자동 선택</option>
+          <option value="auto" data-i18n="browser.auto">자동 선택</option>
           <option value="safari">Safari</option>
           <option value="edge">Microsoft Edge</option>
           <option value="chrome">Google Chrome</option>
         </select>
-        <p class="field-help">다음에 Album Deck을 실행할 때 사용합니다. 선택한 브라우저가 없으면 설치된 브라우저로 자동 대체합니다.</p>
+        <p class="field-help" data-i18n="settings.browserHelp">다음에 Album Deck을 실행할 때 사용합니다. 선택한 브라우저가 없으면 설치된 브라우저로 자동 대체합니다.</p>
+      </div>
+      <div class="device-setting language-setting">
+        <div class="setting-label-row"><label for="languageSelect" data-i18n="language.label">언어</label></div>
+        <select id="languageSelect">
+          <option value="ko" lang="ko">한국어</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <p class="field-help" data-i18n="language.help">Album Deck 화면에 표시할 언어입니다.</p>
       </div>
       <div class="device-setting">
-        <div class="setting-label-row"><label for="deviceSelect">재생 장치</label><button class="text-button" id="refreshDevices" type="button">새로고침</button></div>
-        <select id="deviceSelect"><option value="browser">이 브라우저 · Album Deck</option></select>
+        <div class="setting-label-row"><label for="deviceSelect" data-i18n="settings.device">재생 장치</label><button class="text-button" id="refreshDevices" type="button" data-i18n="common.refresh">새로고침</button></div>
+        <select id="deviceSelect"><option value="browser" data-i18n="device.browserOption">이 브라우저 · Album Deck</option></select>
         <div class="local-output-setting" id="localOutputSetting">
-          <span id="localOutputHelp">현재 PC의 출력 인터페이스는 운영체제의 사운드 설정에서 지정합니다.</span>
-          <button class="quiet-button" id="openSoundSettings" type="button">Windows 출력 설정 열기</button>
+          <span id="localOutputHelp" data-i18n="settings.localOutputHelp">현재 PC의 출력 인터페이스는 운영체제의 사운드 설정에서 지정합니다.</span>
+          <button class="quiet-button" id="openSoundSettings" type="button" data-i18n="settings.openWindowsOutput">Windows 출력 설정 열기</button>
         </div>
       </div>
       <div class="gap-setting">
-        <label for="gapInput">무음 길이</label>
+        <label for="gapInput" data-i18n="settings.gap">무음 길이</label>
         <output id="gapValue" for="gapInput">2초</output>
         <input id="gapInput" type="range" min="0" max="30" step="0.5" value="2" />
-        <div class="gap-scale"><span>0초</span><span>15초</span><span>30초</span></div>
+        <div class="gap-scale" id="gapScale"><span>0초</span><span>15초</span><span>30초</span></div>
       </div>
-      <p class="settings-note">설정한 무음 뒤에 Spotify가 다음 곡을 준비하는 시간이 추가될 수 있습니다.</p>
+      <p class="settings-note" data-i18n="settings.gapNote">설정한 무음 뒤에 Spotify가 다음 곡을 준비하는 시간이 추가될 수 있습니다.</p>
       <div class="dialog-actions">
-        <button class="quiet-button" id="settingsCancel">취소</button>
-        <button class="connect-button" id="settingsSave">저장</button>
+        <button class="quiet-button" id="settingsCancel" data-i18n="common.cancel">취소</button>
+        <button class="connect-button" id="settingsSave" data-i18n="common.save">저장</button>
       </div>
     </dialog>
     <dialog class="account-dialog tag-dialog" id="tagDialog">
       <div class="settings-heading"><div class="dialog-mark">♫</div><span>FILE TAGGING</span></div>
-      <h2>ID3 태그 붙이기</h2>
-      <p>현재 선택한 앨범/플레이리스트 순서에 맞춰 MP3 파일에 곡 제목, 아티스트, 앨범, 원래 앨범의 트랙·디스크 번호를 기록합니다. 파일 길이 차이가 10초를 넘으면 안전을 위해 건너뜁니다.</p>
-      <div class="tag-picker-row"><button class="connect-button" id="chooseTagFiles" type="button">MP3 폴더 선택</button><span id="tagFileSummary">선택된 파일 없음</span></div>
+      <h2 data-i18n="tag.title">ID3 태그 붙이기</h2>
+      <p data-i18n="tag.copy">현재 선택한 앨범/플레이리스트 순서에 맞춰 MP3 파일에 곡 제목, 아티스트, 앨범, 원래 앨범의 트랙·디스크 번호를 기록합니다. 파일 길이 차이가 10초를 넘으면 안전을 위해 건너뜁니다.</p>
+      <div class="tag-picker-row"><button class="connect-button" id="chooseTagFiles" type="button" data-i18n="tag.chooseFolder">MP3 폴더 선택</button><span id="tagFileSummary" data-i18n="tag.noFiles">선택된 파일 없음</span></div>
       <input id="tagFileInput" type="file" accept="audio/mpeg,.mp3" multiple hidden />
       <div class="tag-progress" id="tagProgress" hidden></div>
       <div class="dialog-actions">
-        <button class="quiet-button" id="tagCancel" type="button">닫기</button>
-        <button class="connect-button" id="applyTags" type="button" disabled>태그 기록</button>
+        <button class="quiet-button" id="tagCancel" type="button" data-i18n="common.close">닫기</button>
+        <button class="connect-button" id="applyTags" type="button" data-i18n="tag.apply" disabled>태그 기록</button>
       </div>
     </dialog>
     <dialog class="account-dialog md-dialog" id="mdDialog">
       <div class="settings-heading"><div class="dialog-mark">◎</div><span>MINIDISC TRANSFER</span></div>
-      <h2>MD에서 가져오기</h2>
-      <p>MD에 기록된 곡을 PC로 내려받아 WAV로 변환하고, MP3로 인코딩한 뒤 ID3 태그를 기록해 저장합니다.</p>
+      <h2 data-i18n="md.title">MD에서 가져오기</h2>
+      <p data-i18n="md.copy">MD에 기록된 곡을 PC로 내려받아 WAV로 변환하고, MP3로 인코딩한 뒤 ID3 태그를 기록해 저장합니다.</p>
       <div class="md-connect-row">
-        <button class="connect-button" id="mdConnectNetmd" type="button">NetMD 기기 연결</button>
-        <button class="quiet-button" id="mdOpenHimd" type="button">Hi-MD 드라이브 열기</button>
+        <button class="connect-button" id="mdConnectNetmd" type="button" data-i18n="md.connectNetmd">NetMD 기기 연결</button>
+        <button class="quiet-button" id="mdOpenHimd" type="button" data-i18n="md.openHimd">Hi-MD 드라이브 열기</button>
       </div>
       <details class="md-support-help">
-        <summary>지원 기기 안내</summary>
+        <summary data-i18n="md.supportSummary">지원 기기 안내</summary>
         <ul>
-          <li><strong>NetMD (일반 MD 디스크)</strong>: USB로 곡을 PC에 보내는 기능은 Sony MZ-RH1 / MZ-M200만 지원합니다. 다른 NetMD 기기는 연결 후 곡 목록만 확인할 수 있습니다.</li>
-          <li><strong>Hi-MD (Hi-MD 포맷 디스크)</strong>: Hi-MD 모드로 연결해 드라이브로 나타나는 모든 Hi-MD 기기를 지원합니다. 드라이브 최상위(HMDHIFI 폴더가 있는 위치)를 선택하세요.</li>
-          <li>WebUSB와 폴더 접근을 지원하는 Chrome 또는 Edge가 필요합니다. Safari와 Firefox는 지원하지 않습니다.</li>
+          <li data-i18n-html="md.supportNetmdHtml"><strong>NetMD (일반 MD 디스크)</strong>: USB로 곡을 PC에 보내는 기능은 Sony MZ-RH1 / MZ-M200만 지원합니다. 다른 NetMD 기기는 연결 후 곡 목록만 확인할 수 있습니다.</li>
+          <li data-i18n-html="md.supportHimdHtml"><strong>Hi-MD (Hi-MD 포맷 디스크)</strong>: Hi-MD 모드로 연결해 드라이브로 나타나는 모든 Hi-MD 기기를 지원합니다. 드라이브 최상위(HMDHIFI 폴더가 있는 위치)를 선택하세요.</li>
+          <li data-i18n="md.supportBrowser">WebUSB와 폴더 접근을 지원하는 Chrome 또는 Edge가 필요합니다. Safari와 Firefox는 지원하지 않습니다.</li>
         </ul>
       </details>
       <div class="md-device" id="mdDevice" hidden>
@@ -286,18 +298,18 @@
       </div>
       <p class="md-context-note" id="mdContextNote"></p>
       <div class="md-track-toolbar" id="mdTrackToolbar" hidden>
-        <label><input type="checkbox" id="mdSelectAll" /> 전체 선택</label>
+        <label><input type="checkbox" id="mdSelectAll" /> <span data-i18n="md.selectAll">전체 선택</span></label>
         <span id="mdSelectionCount"></span>
       </div>
-      <p class="md-selection-help">클릭: 한 곡만 선택 · Ctrl+클릭: 추가/해제 · Shift+클릭: 구간 선택 · Ctrl+A: 전체 선택 · ↑↓, Shift+↑↓, Space로도 선택할 수 있습니다.</p>
-      <div class="md-track-list" id="mdTrackList" tabindex="0" role="listbox" aria-multiselectable="true" aria-label="MD 곡 목록"></div>
+      <p class="md-selection-help" data-i18n="md.selectionHelp">클릭: 한 곡만 선택 · Ctrl+클릭: 추가/해제 · Shift+클릭: 구간 선택 · Ctrl+A: 전체 선택 · ↑↓, Shift+↑↓, Space로도 선택할 수 있습니다.</p>
+      <div class="md-track-list" id="mdTrackList" tabindex="0" role="listbox" aria-multiselectable="true" aria-label="MD 곡 목록" data-i18n-attr="aria-label:md.trackListAria"></div>
       <fieldset class="md-options">
-        <legend>변환 옵션</legend>
-        <label class="md-option"><input type="checkbox" id="mdTrimOption" checked /><span><strong>원곡 길이에 맞춰 앞부분만 저장</strong><small>MP3 변환 후 매칭한 Spotify 곡 길이만큼 앞부분만 남기고 뒤쪽 무음을 잘라 냅니다.</small></span></label>
-        <label class="md-option"><input type="checkbox" id="mdAlbumFolderOption" checked /><span><strong>앨범별 폴더로 분리 저장</strong><small>ID3 태그의 “아티스트 - 앨범” 이름으로 하위 폴더를 만들어 저장합니다.</small></span></label>
-        <label class="md-option"><input type="checkbox" id="mdKeepWavOption" /><span><strong>WAV 파일도 함께 저장</strong><small>MD에서 내려받아 변환한 원본 길이의 WAV를 MP3 옆에 남깁니다.</small></span></label>
+        <legend data-i18n="md.options">변환 옵션</legend>
+        <label class="md-option"><input type="checkbox" id="mdTrimOption" checked /><span><strong data-i18n="md.trim">원곡 길이에 맞춰 앞부분만 저장</strong><small data-i18n="md.trimHelp">MP3 변환 후 매칭한 Spotify 곡 길이만큼 앞부분만 남기고 뒤쪽 무음을 잘라 냅니다.</small></span></label>
+        <label class="md-option"><input type="checkbox" id="mdAlbumFolderOption" checked /><span><strong data-i18n="md.albumFolders">앨범별 폴더로 분리 저장</strong><small data-i18n="md.albumFoldersHelp">ID3 태그의 “아티스트 - 앨범” 이름으로 하위 폴더를 만들어 저장합니다.</small></span></label>
+        <label class="md-option"><input type="checkbox" id="mdKeepWavOption" /><span><strong data-i18n="md.keepWav">WAV 파일도 함께 저장</strong><small data-i18n="md.keepWavHelp">MD에서 내려받아 변환한 원본 길이의 WAV를 MP3 옆에 남깁니다.</small></span></label>
         <div class="md-bitrate">
-          <label for="mdBitrate">MP3 품질</label>
+          <label for="mdBitrate" data-i18n="md.quality">MP3 품질</label>
           <select id="mdBitrate">
             <option value="320k">320 kbps (CBR)</option>
             <option value="256k">256 kbps (CBR)</option>
@@ -306,11 +318,11 @@
           </select>
         </div>
       </fieldset>
-      <div class="tag-picker-row"><button class="quiet-button" id="mdChooseFolder" type="button">저장 폴더 선택</button><span id="mdFolderSummary">선택된 폴더 없음</span></div>
+      <div class="tag-picker-row"><button class="quiet-button" id="mdChooseFolder" type="button" data-i18n="md.chooseFolder">저장 폴더 선택</button><span id="mdFolderSummary" data-i18n="md.noFolder">선택된 폴더 없음</span></div>
       <div class="tag-progress" id="mdProgress" hidden></div>
       <div class="dialog-actions">
-        <button class="quiet-button" id="mdClose" type="button">닫기</button>
-        <button class="connect-button" id="mdStart" type="button" disabled>다운로드 시작</button>
+        <button class="quiet-button" id="mdClose" type="button" data-i18n="common.close">닫기</button>
+        <button class="connect-button" id="mdStart" type="button" data-i18n="md.start" disabled>다운로드 시작</button>
       </div>
     </dialog>
   </body>
