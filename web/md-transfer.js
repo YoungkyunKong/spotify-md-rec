@@ -22,6 +22,9 @@ let mdTracks = [];
 let outputDirectory = null;
 let running = false;
 let bound = false;
+// Explorer-style selection: the anchor is where a Shift range starts, the cursor is the focused row.
+let selectionAnchor = 0;
+let selectionCursor = 0;
 
 const $ = (selector) => document.querySelector(selector);
 const el = {};
@@ -325,9 +328,13 @@ function bind() {
   el.connectNetmd.addEventListener("click", () => useSource(connectNetmd));
   el.openHimd.addEventListener("click", () => useSource(openHimd));
   el.selectAll.addEventListener("change", () => {
-    el.trackList.querySelectorAll(".md-track-check").forEach((box) => { box.checked = el.selectAll.checked; });
+    trackBoxes().forEach((box) => { box.checked = el.selectAll.checked; });
     updateSelection();
   });
+  el.trackList.addEventListener("click", onTrackListClick);
+  el.trackList.addEventListener("keydown", onTrackListKeydown);
+  // Keep Shift+click from selecting row text.
+  el.trackList.addEventListener("mousedown", (event) => { if (event.shiftKey && !event.target.closest("select")) event.preventDefault(); });
   el.chooseFolder.addEventListener("click", () => chooseOutputDirectory().catch((error) => {
     if (error?.name !== "AbortError") ctx.showToast(error.message, "error", 7000);
   }));
@@ -390,19 +397,23 @@ function renderTracks() {
   el.toolbar.hidden = !mdTracks.length;
   el.selectAll.checked = source.canDownload;
   el.trackList.replaceChildren();
+  selectionAnchor = 0;
+  selectionCursor = 0;
   if (!mdTracks.length) {
     el.trackList.append(make("div", "md-empty", "디스크에 기록된 곡이 없습니다."));
     return;
   }
   const matches = defaultMatches(mdTracks, ctx.tracks);
   mdTracks.forEach((track, position) => {
-    const row = make("label", "md-track");
+    const row = make("div", "md-track");
+    row.dataset.position = String(position);
     const box = make("input", "md-track-check");
     box.type = "checkbox";
     box.checked = source.canDownload;
     box.disabled = !source.canDownload;
     box.dataset.position = String(position);
-    box.addEventListener("change", updateSelection);
+    box.tabIndex = -1;
+    box.setAttribute("aria-label", `${track.index + 1}번 곡 선택`);
     const copy = make("span", "md-track-copy");
     copy.append(
       make("strong", "", track.title || "(제목 없음)"),
@@ -422,6 +433,85 @@ function renderTracks() {
   });
 }
 
+function trackBoxes() {
+  return [...el.trackList.querySelectorAll(".md-track-check")];
+}
+
+function setRange(boxes, from, to, checked) {
+  for (let index = Math.min(from, to); index <= Math.max(from, to); index++) boxes[index].checked = checked;
+}
+
+function moveCursor(position) {
+  selectionCursor = position;
+  const row = el.trackList.querySelector(`.md-track[data-position="${position}"]`);
+  row?.scrollIntoView({ block: "nearest" });
+}
+
+// Mouse selection as in Windows Explorer:
+//   click = select only this row, Ctrl+click = toggle, Shift+click = select anchor..row,
+//   Ctrl+Shift+click = add anchor..row. Clicking the checkbox itself toggles the row
+//   (Shift+checkbox applies the new state to the whole range).
+function onTrackListClick(event) {
+  if (!source?.canDownload || running || event.target.closest("select")) return;
+  const row = event.target.closest(".md-track");
+  if (!row) return;
+  const boxes = trackBoxes();
+  const position = Number(row.dataset.position);
+  const additive = event.ctrlKey || event.metaKey;
+  if (event.target.classList.contains("md-track-check")) {
+    if (event.shiftKey) setRange(boxes, selectionAnchor, position, boxes[position].checked);
+    else selectionAnchor = position;
+  } else if (event.shiftKey) {
+    if (!additive) boxes.forEach((box) => { box.checked = false; });
+    setRange(boxes, selectionAnchor, position, true);
+  } else if (additive) {
+    boxes[position].checked = !boxes[position].checked;
+    selectionAnchor = position;
+  } else {
+    boxes.forEach((box, index) => { box.checked = index === position; });
+    selectionAnchor = position;
+  }
+  moveCursor(position);
+  el.trackList.focus({ preventScroll: true });
+  updateSelection();
+}
+
+// Keyboard: ↑/↓/Home/End move (Shift extends the range from the anchor, Ctrl only moves the cursor),
+// Space toggles the cursor row, Ctrl+A selects every track.
+function onTrackListKeydown(event) {
+  if (!source?.canDownload || running || event.target.closest("select")) return;
+  const boxes = trackBoxes();
+  if (!boxes.length) return;
+  const additive = event.ctrlKey || event.metaKey;
+  if (additive && event.key.toLowerCase() === "a") {
+    event.preventDefault();
+    boxes.forEach((box) => { box.checked = true; });
+    updateSelection();
+    return;
+  }
+  if (event.key === " ") {
+    event.preventDefault();
+    boxes[selectionCursor].checked = !boxes[selectionCursor].checked;
+    selectionAnchor = selectionCursor;
+    updateSelection();
+    return;
+  }
+  const last = boxes.length - 1;
+  const next = { ArrowUp: selectionCursor - 1, ArrowDown: selectionCursor + 1, Home: 0, End: last }[event.key];
+  if (next === undefined) return;
+  event.preventDefault();
+  const position = Math.max(0, Math.min(last, next));
+  if (event.shiftKey) {
+    if (!additive) boxes.forEach((box) => { box.checked = false; });
+    setRange(boxes, selectionAnchor, position, true);
+  } else if (!additive) {
+    boxes.forEach((box, index) => { box.checked = index === position; });
+    selectionAnchor = position;
+  }
+  moveCursor(position);
+  updateSelection();
+}
+
 function selectedRows() {
   return [...el.trackList.querySelectorAll(".md-track-check")]
     .filter((box) => box.checked && !box.disabled)
@@ -436,6 +526,16 @@ function updateSelection() {
   if (!bound) return;
   const count = source ? selectedRows().length : 0;
   el.selectionCount.textContent = source ? `${count}/${mdTracks.length}곡 선택` : "";
+  if (source && mdTracks.length) {
+    el.selectAll.checked = count === mdTracks.length;
+    el.selectAll.indeterminate = count > 0 && count < mdTracks.length;
+    el.trackList.querySelectorAll(".md-track").forEach((row) => {
+      const position = Number(row.dataset.position);
+      row.classList.toggle("selected", row.querySelector(".md-track-check").checked);
+      row.classList.toggle("cursor", position === selectionCursor);
+      row.setAttribute("aria-selected", String(row.querySelector(".md-track-check").checked));
+    });
+  }
   el.folderSummary.textContent = outputDirectory ? `저장 위치: ${outputDirectory.name}` : "선택된 폴더 없음";
   el.start.disabled = running || !count || !outputDirectory || !source?.canDownload;
   el.connectNetmd.disabled = running;
