@@ -130,7 +130,7 @@
 <h3 id="md에서-곡이-분리되지-않음">MD에서 곡이 분리되지 않음</h3>
 <ul><li>무음 길이를 늘립니다.</li><li>MD 레코더의 자동 트랙 마크 또는 디지털 싱크 녹음 설정을 확인합니다.</li><li>브라우저 이외의 시스템 소리가 무음 구간에 섞이지 않는지 확인합니다.</li></ul>
 <h3 id="md-기기가-연결-목록에-나타나지-않음">MD 기기가 연결 목록에 나타나지 않음</h3>
-<ul><li>Chrome 또는 Edge에서 <code>http://127.0.0.1:8888</code>로 열었는지 확인합니다.</li><li>일반 MD 디스크를 넣은 NetMD 기기는 <strong>NetMD 기기 연결</strong>로, Hi-MD 포맷 디스크를 넣은 Hi-MD 기기는 <strong>Hi-MD 드라이브 열기</strong>로 연결합니다.</li><li>Web MiniDisc 등 같은 기기를 사용 중인 다른 탭이나 프로그램을 닫습니다.</li><li>Windows에서 NetMD 기기를 계속 찾지 못하면 Web MiniDisc 안내에 따라 해당 기기에 WinUSB 드라이버를 설치해야 할 수 있습니다.</li></ul>
+<ul><li>Chrome 또는 Edge에서 <code>http://127.0.0.1:8888</code>로 열었는지 확인합니다.</li><li>일반 MD 디스크를 넣은 NetMD 기기는 <strong>NetMD 기기 연결</strong>로, Hi-MD 포맷 디스크를 넣은 Hi-MD 기기는 <strong>Hi-MD 드라이브 열기</strong>로 연결합니다.</li><li>Hi-MD 기기는 넣은 디스크에 따라 USB 모드가 바뀝니다. 예를 들어 MZ-RH1은 일반 MD를 넣으면 NetMD 모드(<code>054c:0286</code>), Hi-MD 디스크를 넣으면 Hi-MD 모드(<code>054c:0287</code>, USB 저장 장치)로 연결됩니다. Windows 장치 관리자에 <strong>Hi-MD</strong>로 표시되거나 <strong>NetMD 기기 연결</strong>에서 Hi-MD 모드라는 안내가 나오면 <strong>Hi-MD 드라이브 열기</strong>를 사용하세요. <code>chrome://usb-internals</code>의 <strong>Devices</strong> 탭에서 현재 USB ID를 확인할 수 있습니다.</li><li>Web MiniDisc 등 같은 기기를 사용 중인 다른 탭이나 프로그램을 닫습니다.</li><li>Windows에서 NetMD 기기를 계속 찾지 못하면 Web MiniDisc 안내에 따라 해당 기기에 WinUSB 드라이버를 설치해야 할 수 있습니다.</li></ul>
 <h3 id="album-deck-창을-닫았는데-서버가-남아-있음">Album Deck 창을 닫았는데 서버가 남아 있음</h3>
 <p>Windows 앱 창을 닫아도 로컬 서버는 다음 실행을 위해 백그라운드에서 유지될 수 있습니다. 시작 메뉴의 <strong>Album Deck Stop</strong>을 실행하면 종료됩니다.</p>
 <h2 id="다른-실행-방법">다른 실행 방법</h2>

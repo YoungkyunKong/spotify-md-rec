@@ -96,10 +96,43 @@ function currentOptions() {
 // ---------------------------------------------------------------------------
 // Sources
 
+// Sony Hi-MD recorders connect in one of two modes depending on the disc: NetMD (standard MD)
+// or Hi-MD (USB mass storage, e.g. MZ-RH1 = 054c:0287). The picker lists every Sony device so a
+// Hi-MD-mode recorder is explained instead of silently missing from the list.
+const SONY_VENDOR_ID = 0x054c;
+const HIMD_MODE_NAMES = { 0x0287: "Sony MZ-RH1 / MZ-M200" };
+
+export function usbDeviceMode(device, netmdIds) {
+  if (netmdIds.some(({ vendorId, deviceId }) => vendorId === device.vendorId && deviceId === device.productId)) return "netmd";
+  const massStorage = (device.configurations || []).some((configuration) => configuration.interfaces.some(
+    (usbInterface) => usbInterface.alternates.some((alternate) => alternate.interfaceClass === 0x08),
+  ));
+  if (massStorage || (device.vendorId === SONY_VENDOR_ID && HIMD_MODE_NAMES[device.productId])) return "himd";
+  return "unknown";
+}
+
 async function connectNetmd() {
   if (!navigator.usb) throw new Error(t("md.noWebUsb"));
   const md = await loadMdLib();
-  const iface = await md.openNewDevice(navigator.usb);
+  const filters = [
+    ...md.DevicesIds.map(({ vendorId, deviceId }) => ({ vendorId, productId: deviceId })),
+    { vendorId: SONY_VENDOR_ID },
+  ];
+  let device;
+  try {
+    device = await navigator.usb.requestDevice({ filters });
+  } catch (error) {
+    if (error?.name === "NotFoundError") return null; // Picker closed without a selection.
+    throw error;
+  }
+  const id = `${hex(device.vendorId)}:${hex(device.productId)}`;
+  const mode = usbDeviceMode(device, md.DevicesIds);
+  if (mode === "himd") {
+    throw new Error(t("md.deviceInHimdMode", { name: HIMD_MODE_NAMES[device.productId] || device.productName || "Hi-MD", id }));
+  }
+  if (mode !== "netmd") throw new Error(t("md.deviceNotNetmd", { name: device.productName || "USB", id }));
+  // netmd-js opens whatever its USB object's requestDevice() returns; hand it the device already chosen.
+  const iface = await md.openNewDevice({ requestDevice: async () => device });
   if (!iface) return null;
   const vendorId = iface.netMd.getVendor();
   const productId = iface.netMd.getProduct();

@@ -230,6 +230,7 @@ MiniDisc에 기록된 곡을 USB로 PC에 내려받아 WAV로 변환하고, MP3�
 
 - Chrome 또는 Edge에서 `http://127.0.0.1:8888`로 열었는지 확인합니다.
 - 일반 MD 디스크를 넣은 NetMD 기기는 **NetMD 기기 연결**로, Hi-MD 포맷 디스크를 넣은 Hi-MD 기기는 **Hi-MD 드라이브 열기**로 연결합니다.
+- Hi-MD 기기는 넣은 디스크에 따라 USB 모드가 바뀝니다. 예를 들어 MZ-RH1은 일반 MD를 넣으면 NetMD 모드(`054c:0286`), Hi-MD 디스크를 넣으면 Hi-MD 모드(`054c:0287`, USB 저장 장치)로 연결됩니다. Windows 장치 관리자에 **Hi-MD**로 표시되거나 **NetMD 기기 연결**에서 Hi-MD 모드라는 안내가 나오면 **Hi-MD 드라이브 열기**를 사용하세요. `chrome://usb-internals`의 **Devices** 탭에서 현재 USB ID를 확인할 수 있습니다.
 - Web MiniDisc 등 같은 기기를 사용 중인 다른 탭이나 프로그램을 닫습니다.
 - Windows에서 NetMD 기기를 계속 찾지 못하면 Web MiniDisc 안내에 따라 해당 기기에 WinUSB 드라이버를 설치해야 할 수 있습니다.
 
