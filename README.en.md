@@ -230,6 +230,7 @@ Files are named `01 Title.mp3`; multi-disc albums add the disc number, as in `2-
 
 - Open Album Deck at `http://127.0.0.1:8888` in Chrome or Edge.
 - Connect a NetMD device holding a standard MD with **Connect NetMD device**, and a Hi-MD device holding a Hi-MD formatted disc with **Open Hi-MD drive**.
+- Hi-MD recorders change USB mode with the inserted disc. For example, the MZ-RH1 connects in NetMD mode (`054c:0286`) with a standard MD and in Hi-MD mode (`054c:0287`, USB mass storage) with a Hi-MD disc. If Windows Device Manager shows **Hi-MD**, or **Connect NetMD device** reports Hi-MD mode, use **Open Hi-MD drive**. The **Devices** tab of `chrome://usb-internals` shows the current USB ID.
 - Close other tabs or apps, such as Web MiniDisc, that are using the same device.
 - If Windows still cannot find a NetMD device, it may need the WinUSB driver described in the Web MiniDisc instructions.
 
