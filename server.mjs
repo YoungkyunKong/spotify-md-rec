@@ -50,12 +50,29 @@ const mime = {
   ".wasm": "application/wasm",
 };
 
+// Hi-MD USB mode (native/himd-usb.mjs) is loaded on first use so normal startup stays light.
+let hiMDUsb = null;
+function hiMDUsbModule() {
+  hiMDUsb ||= import("./native/himd-usb.mjs").then((module) => ({ module, service: module.createHiMDUsbService() }));
+  return hiMDUsb;
+}
+
 const server = createServer(async (request, response) => {
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host}`).pathname);
   } catch {
     response.writeHead(400).end("Bad request");
+    return;
+  }
+
+  if (pathname.startsWith("/md-usb/")) {
+    try {
+      const { module, service } = await hiMDUsbModule();
+      await module.handleHiMDUsbRequest(request, response, pathname, service);
+    } catch (error) {
+      if (!response.headersSent) response.writeHead(500, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }).end(JSON.stringify({ error: "unavailable", message: error.message }));
+    }
     return;
   }
 
@@ -133,7 +150,8 @@ server.listen(port, host, () => {
 });
 
 function shutdown() {
-  server.close(() => process.exit(0));
+  const releaseUsb = hiMDUsb ? hiMDUsb.then(({ service }) => service.close()).catch(() => {}) : Promise.resolve();
+  releaseUsb.finally(() => server.close(() => process.exit(0)));
 }
 
 async function browserConfig() {

@@ -168,6 +168,26 @@ async function connectNetmd() {
   };
 }
 
+function himdTrackRows(list) {
+  return list.map((track) => ({
+    index: track.index,
+    title: track.title || "",
+    artist: track.artist || "",
+    album: track.album || "",
+    durationMs: Math.round(track.duration * 1000),
+    codec: `${HIMD_ENCODINGS[track.encoding] || track.encoding}${track.bitrate ? ` ${track.bitrate}k` : ""}`,
+  }));
+}
+
+function concatChunks(chunks, length) {
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+  return bytes;
+}
+
+const HIMD_EXTENSIONS = { MP3: "mp3", WAV: "wav", OMA: "oma" };
+
 async function openHimd() {
   if (typeof window.showDirectoryPicker !== "function") throw new Error(t("md.noFsAccess"));
   const md = await loadMdLib();
@@ -179,14 +199,7 @@ async function openHimd() {
     throw new Error(t("md.notHimd"));
   }
   const himd = await md.HiMD.init(fs);
-  const tracks = md.getAllTracks(himd).map((track) => ({
-    index: track.index,
-    title: track.title || "",
-    artist: track.artist || "",
-    album: track.album || "",
-    durationMs: Math.round(track.duration * 1000),
-    codec: `${HIMD_ENCODINGS[track.encoding] || track.encoding}${track.bitrate ? ` ${track.bitrate}k` : ""}`,
-  }));
+  const tracks = himdTrackRows(md.getAllTracks(himd));
   return {
     kind: "himd",
     label: "Hi-MD",
@@ -206,12 +219,69 @@ async function openHimd() {
         length += chunk.length;
         onProgress(total ? Math.min(1, received++ / total) : 0);
       }
-      const bytes = new Uint8Array(length);
-      let offset = 0;
-      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-      return { data: bytes, ext: { MP3: "mp3", WAV: "wav", OMA: "oma" }[format] };
+      return { data: concatChunks(chunks, length), ext: HIMD_EXTENSIONS[format] };
     },
     async close() {},
+  };
+}
+
+// Hi-MD direct USB: the local Album Deck server (native/himd-usb.mjs) opens a recorder in Hi-MD mode
+// over node-usb, which browsers cannot do. Only available when the app runs from its own server.
+const MD_USB_HEADERS = { "X-Album-Deck": "1" };
+
+export async function hiMDUsbStatus() {
+  try {
+    const response = await fetch("/md-usb/status", { headers: MD_USB_HEADERS, cache: "no-store" });
+    if (!response.ok || !(response.headers.get("content-type") || "").includes("application/json")) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function hiMDUsbError(body, status) {
+  switch (body?.error) {
+    case "usb-module-missing": return new Error(t("md.usbModuleMissing"));
+    case "no-device": return new Error(t("md.usbNoDevice"));
+    case "open-failed": return new Error(t("md.usbOpenFailed", { id: body.id || "USB", error: body.message || "" }));
+    case "himd-init-failed": return new Error(t("md.usbInitFailed", { error: body.message || "" }));
+    default: return new Error(t("md.usbServerError", { error: body?.message || body?.error || `HTTP ${status}` }));
+  }
+}
+
+async function openHimdUsb() {
+  const response = await fetch("/md-usb/open", { method: "POST", headers: MD_USB_HEADERS, cache: "no-store" });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw hiMDUsbError(body, response.status);
+  return {
+    kind: "himd-usb",
+    label: "Hi-MD USB",
+    deviceName: body.deviceName,
+    discTitle: body.discTitle || "",
+    canDownload: true,
+    supportNote: t("md.himdUsbSupported"),
+    tracks: himdTrackRows(body.tracks || []),
+    async dump(track, onProgress) {
+      const trackResponse = await fetch(`/md-usb/track?index=${encodeURIComponent(track.index)}`, { headers: MD_USB_HEADERS, cache: "no-store" });
+      if (!trackResponse.ok) throw hiMDUsbError(await trackResponse.json().catch(() => null), trackResponse.status);
+      const format = trackResponse.headers.get("X-MD-Format");
+      const estimated = Number(trackResponse.headers.get("X-MD-Estimated-Bytes")) || 0;
+      const reader = trackResponse.body.getReader();
+      const chunks = [];
+      let length = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        length += value.length;
+        onProgress(estimated ? Math.min(1, length / estimated) : 0);
+      }
+      if (!HIMD_EXTENSIONS[format]) throw new Error(t("md.usbServerError", { error: `format ${format}` }));
+      return { data: concatChunks(chunks, length), ext: HIMD_EXTENSIONS[format] };
+    },
+    async close() {
+      await fetch("/md-usb/close", { method: "POST", headers: MD_USB_HEADERS }).catch(() => {});
+    },
   };
 }
 
@@ -346,7 +416,7 @@ function bind() {
   if (bound) return;
   bound = true;
   Object.assign(el, {
-    dialog: $("#mdDialog"), connectNetmd: $("#mdConnectNetmd"), openHimd: $("#mdOpenHimd"),
+    dialog: $("#mdDialog"), connectNetmd: $("#mdConnectNetmd"), openHimd: $("#mdOpenHimd"), openHimdUsb: $("#mdOpenHimdUsb"),
     device: $("#mdDevice"), deviceName: $("#mdDeviceName"), deviceSupport: $("#mdDeviceSupport"), discInfo: $("#mdDiscInfo"),
     contextNote: $("#mdContextNote"), toolbar: $("#mdTrackToolbar"), selectAll: $("#mdSelectAll"), selectionCount: $("#mdSelectionCount"),
     trackList: $("#mdTrackList"), trim: $("#mdTrimOption"), albumFolders: $("#mdAlbumFolderOption"), keepWav: $("#mdKeepWavOption"),
@@ -362,6 +432,7 @@ function bind() {
 
   el.connectNetmd.addEventListener("click", () => useSource(connectNetmd));
   el.openHimd.addEventListener("click", () => useSource(openHimd));
+  el.openHimdUsb.addEventListener("click", () => useSource(openHimdUsb));
   el.selectAll.addEventListener("change", () => {
     trackBoxes().forEach((box) => { box.checked = el.selectAll.checked; });
     updateSelection();
@@ -392,12 +463,15 @@ export function openMdTransferDialog(context) {
   if (source) renderTracks();
   updateSelection();
   el.dialog.showModal();
+  // The direct USB option exists only when the local server provides it (not on static hosting).
+  hiMDUsbStatus().then((status) => { el.openHimdUsb.hidden = !status; });
 }
 
 async function useSource(factory) {
   if (running) return;
   el.connectNetmd.disabled = true;
   el.openHimd.disabled = true;
+  el.openHimdUsb.disabled = true;
   try {
     // Release the current device first so the same NetMD device can be claimed again.
     if (source) {
@@ -419,6 +493,7 @@ async function useSource(factory) {
   } finally {
     el.connectNetmd.disabled = false;
     el.openHimd.disabled = false;
+    el.openHimdUsb.disabled = false;
     updateSelection();
   }
 }
@@ -575,6 +650,7 @@ function updateSelection() {
   el.start.disabled = running || !count || !outputDirectory || !source?.canDownload;
   el.connectNetmd.disabled = running;
   el.openHimd.disabled = running;
+  el.openHimdUsb.disabled = running;
   el.chooseFolder.disabled = running;
   el.close.disabled = running;
 }

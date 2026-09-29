@@ -178,6 +178,7 @@ Album Deck can download tracks recorded on a MiniDisc over USB, decode them to W
 | --- | --- | --- |
 | Standard MD (SP, LP2, LP4) | **Connect NetMD device** (WebUSB) | Sony MZ-RH1 / MZ-M200 only. Other NetMD devices can connect and list tracks, but download stays disabled. |
 | Hi-MD formatted disc (PCM, ATRAC3, ATRAC3plus, MP3) | **Open Hi-MD drive** (folder access) | Every Hi-MD device connected in Hi-MD mode that appears as a drive. |
+| Hi-MD formatted disc that does not appear as a drive | **Hi-MD direct USB** (local server) | The Album Deck server running on this PC opens a Hi-MD-mode recorder directly over USB, for example an MZ-RH1 (`054c:0287`) whose drive disappeared after installing the WinUSB driver with Zadig. This is the same approach as ElectronWMD's Hi-MD full mode and appears only when Album Deck runs locally. |
 
 - Use **Chrome or Edge**, which provide WebUSB and the File System Access API. Safari and Firefox are not supported.
 - The first conversion downloads ffmpeg.wasm (about 30 MB) from jsDelivr, so an internet connection is required.
@@ -186,7 +187,7 @@ Album Deck can download tracks recorded on a MiniDisc over USB, decode them to W
 
 1. Optionally select the Spotify album or playlist to use for tags. Without one, Album Deck uses the title, artist, album, and disc title stored on the MD.
 2. Select **Import MD** at the top of the app.
-3. For a standard MD, select **Connect NetMD device** and choose the device. For a Hi-MD disc, select **Open Hi-MD drive** and choose the drive root that contains the `HMDHIFI` folder.
+3. For a standard MD, select **Connect NetMD device** and choose the device. For a Hi-MD disc, select **Open Hi-MD drive** and choose the drive root that contains the `HMDHIFI` folder. If the Hi-MD drive does not appear because the WinUSB driver is installed, select **Hi-MD direct USB** instead, after closing ElectronWMD or any other app that uses the device.
 4. Check the support status beside the device name. Tracks cannot be selected on an unsupported device.
 5. Check the tracks to download. As in Windows Explorer, clicking a track selects only that track, **Ctrl+click** adds or removes a track, and **Shift+click** selects the range from the last clicked track (**Ctrl+Shift+click** adds the range). In the list, **Ctrl+A** selects every track, and **↑/↓**, **Shift+↑/↓**, **Home/End**, and **Space** also change the selection. A checkbox toggles one track; Shift+clicking a checkbox applies its new state to the whole range. The list at the right of each track selects the Spotify track used for its tags. Album Deck preselects a track with the same title or position; choose **Use MD info** to tag it from the MD title instead.
 6. Choose conversion options:
@@ -230,7 +231,7 @@ Files are named `01 Title.mp3`; multi-disc albums add the disc number, as in `2-
 
 - Open Album Deck at `http://127.0.0.1:8888` in Chrome or Edge.
 - Connect a NetMD device holding a standard MD with **Connect NetMD device**, and a Hi-MD device holding a Hi-MD formatted disc with **Open Hi-MD drive**.
-- Hi-MD recorders change USB mode with the inserted disc. For example, the MZ-RH1 connects in NetMD mode (`054c:0286`) with a standard MD and in Hi-MD mode (`054c:0287`, USB mass storage) with a Hi-MD disc. If Windows Device Manager shows **Hi-MD**, or **Connect NetMD device** reports Hi-MD mode, use **Open Hi-MD drive**. The **Devices** tab of `chrome://usb-internals` shows the current USB ID.
+- Hi-MD recorders change USB mode with the inserted disc. For example, the MZ-RH1 connects in NetMD mode (`054c:0286`) with a standard MD and in Hi-MD mode (`054c:0287`, USB mass storage) with a Hi-MD disc. If Windows Device Manager shows **Hi-MD**, or **Connect NetMD device** reports Hi-MD mode, use **Open Hi-MD drive**; if the drive disappeared because the WinUSB driver was installed with Zadig, use **Hi-MD direct USB**. Windows binds only one driver per device, so the drive method is unavailable while WinUSB is installed. The **Devices** tab of `chrome://usb-internals` shows the current USB ID.
 - Close other tabs or apps, such as Web MiniDisc, that are using the same device.
 - If Windows still cannot find a NetMD device, it may need the WinUSB driver described in the Web MiniDisc instructions.
 
@@ -248,7 +249,7 @@ cd spotify-md-rec
 npm start
 ```
 
-Open [http://127.0.0.1:8888](http://127.0.0.1:8888). Press `Ctrl+C` in the terminal to stop the server.
+Open [http://127.0.0.1:8888](http://127.0.0.1:8888). Press `Ctrl+C` in the terminal to stop the server. To use **Hi-MD direct USB**, run `npm install` once to install the optional `usb` module. The Windows release ZIP and npm installation already include it.
 
 ### Install from npm
 

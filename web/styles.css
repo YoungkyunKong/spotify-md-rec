@@ -245,6 +245,7 @@ input[type="range"]:disabled { opacity: .4; cursor: default; }
 .md-support-help summary { color: var(--mint); cursor: pointer; }
 .md-support-help ul { margin: 8px 0 0; padding-left: 18px; }
 .md-support-help strong { color: #c1c9c0; font-weight: 600; }
+.md-support-help code { color: #c1c9c0; font: 10px var(--mono); }
 .md-device { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin-top: 16px; padding: 12px 13px; background: #151917; border: 1px solid #303732; border-radius: 6px; font-size: 12px; }
 .md-device strong { font-weight: 600; }
 .md-support { color: var(--mint); font: 10px var(--mono); text-align: right; }

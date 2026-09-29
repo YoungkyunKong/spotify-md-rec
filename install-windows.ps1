@@ -57,6 +57,7 @@ New-Item -ItemType Directory -Force -Path $installRoot | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "web") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "windows") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "assets") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $installRoot "native") | Out-Null
 
 Copy-Item -LiteralPath (Join-Path $sourceRoot "package.json") -Destination $installRoot -Force
 Copy-Item -LiteralPath (Join-Path $sourceRoot "package-lock.json") -Destination $installRoot -Force
@@ -64,6 +65,14 @@ Copy-Item -LiteralPath (Join-Path $sourceRoot "server.mjs") -Destination $instal
 Copy-Item -Path (Join-Path $sourceRoot "web\*") -Destination (Join-Path $installRoot "web") -Recurse -Force
 Copy-Item -Path (Join-Path $sourceRoot "windows\*") -Destination (Join-Path $installRoot "windows") -Recurse -Force
 Copy-Item -Path (Join-Path $sourceRoot "assets\*") -Destination (Join-Path $installRoot "assets") -Recurse -Force
+Copy-Item -Path (Join-Path $sourceRoot "native\*") -Destination (Join-Path $installRoot "native") -Recurse -Force
+# Optional "usb" module (Hi-MD direct USB); replaced as a whole so updates do not mix versions.
+$sourceModules = Join-Path $sourceRoot "node_modules"
+if (Test-Path -LiteralPath $sourceModules) {
+  $installModules = Join-Path $installRoot "node_modules"
+  if (Test-Path -LiteralPath $installModules) { Remove-Item -LiteralPath $installModules -Recurse -Force }
+  Copy-Item -LiteralPath $sourceModules -Destination $installModules -Recurse -Force
+}
 
 $shell = New-Object -ComObject WScript.Shell
 $powershell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
