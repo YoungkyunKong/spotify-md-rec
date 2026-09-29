@@ -1,5 +1,5 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderUserGuide } from "./render-user-guide.mjs";
@@ -18,6 +18,7 @@ await buildHelpFiles(root);
 
 const files = [
   "assets",
+  "native",
   "web",
   "windows",
   "install-windows.cmd",
@@ -34,6 +35,10 @@ try {
   for (const name of files) {
     await cp(resolve(root, name), resolve(stage, name), { recursive: true });
   }
+  // Bundle the optional "usb" module for Hi-MD direct USB. Its npm package already contains
+  // prebuilt binaries for Windows x64/ia32/arm64, so no install script or compiler is needed.
+  execSync("npm ci --omit=dev --ignore-scripts --no-audit --no-fund", { cwd: stage, stdio: "inherit" });
+  await rm(resolve(stage, "node_modules", ".bin"), { recursive: true, force: true });
   const readme = await readFile(resolve(root, "README.md"), "utf8");
   await writeFile(resolve(stage, "사용설명서.html"), renderUserGuide(readme, packageJson.version), "utf8");
   const englishReadme = await readFile(resolve(root, "README.en.md"), "utf8");

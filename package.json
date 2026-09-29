@@ -11,6 +11,7 @@
     "api",
     "assets",
     "bin",
+    "native",
     "distribution",
     "scripts",
     "web",
@@ -34,12 +35,15 @@
     "minidisc",
     "web-playback"
   ],
+  "optionalDependencies": {
+    "usb": "2.18.0"
+  },
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check web/app.js && node --check web/md-transfer.js && node --check web/i18n.js && node --check api/config.js && node --check api/healthz.js && node --check bin/album-deck.mjs && node --check scripts/build-help.mjs && node --check scripts/build-vercel.mjs && node --check scripts/build-windows-zip.mjs && node --check scripts/render-user-guide.mjs",
+    "check": "node --check server.mjs && node --check native/himd-usb.mjs && node --check web/app.js && node --check web/md-transfer.js && node --check web/i18n.js && node --check api/config.js && node --check api/healthz.js && node --check bin/album-deck.mjs && node --check scripts/build-help.mjs && node --check scripts/build-vercel.mjs && node --check scripts/build-windows-zip.mjs && node --check scripts/render-user-guide.mjs",
     "build:help": "node scripts/build-help.mjs",
     "build:md-lib": "npm --prefix tools/md-lib install && npm --prefix tools/md-lib run build",
     "build:vercel": "node scripts/build-vercel.mjs",
